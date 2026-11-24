@@ -1,0 +1,47 @@
+"use client";
+
+import { useActionState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Field, FieldError, FieldHint, Input, Label, NativeSelect, Textarea } from "@/components/ui/input";
+import { createClass } from "@/lib/actions/classes";
+
+export function NewClassForm() {
+  const [state, action, pending] = useActionState(createClass, undefined);
+  const err = state?.fieldErrors ?? {};
+
+  return (
+    <form action={action} className="flex flex-col gap-5">
+      <Field>
+        <Label htmlFor="course">Course</Label>
+        <NativeSelect id="course" name="course" defaultValue="APUSH">
+          <option value="APUSH">AP U.S. History</option>
+          <option value="AP_LANG">AP English Language</option>
+        </NativeSelect>
+      </Field>
+      <Field>
+        <Label htmlFor="name">Class name</Label>
+        <Input id="name" name="name" placeholder="Period 3" aria-invalid={!!err.name} required maxLength={60} />
+        {err.name && <FieldError>{err.name}</FieldError>}
+      </Field>
+      <Field>
+        <Label htmlFor="roster">Roster</Label>
+        <Textarea
+          id="roster"
+          name="roster"
+          rows={10}
+          placeholder={"Maya Chen\nRivera, Daniel\n..."}
+          aria-invalid={!!err.roster}
+        />
+        <FieldHint>One student per line, as First Last or Last, First. You can add students later.</FieldHint>
+        {err.roster && <FieldError>{err.roster}</FieldError>}
+      </Field>
+      {state?.error && <FieldError>{state.error}</FieldError>}
+      <div>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Creating class" : "Create class"}
+        </Button>
+      </div>
+    </form>
+  );
+}
