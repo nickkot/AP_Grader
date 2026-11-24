@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Components never hardcode colors, sizes or fonts.
+ * Rules live in .claude/skills/design-system/SKILL.md.
+ */
+
+:root {
+  /* Neutrals */
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.22 0.005 260);
+  --surface: oklch(1 0 0);
+  --surface-muted: oklch(0.97 0.002 260);
+  --muted-foreground: oklch(0.48 0.008 260);
+  --border: oklch(0.91 0.003 260);
+  --input: oklch(0.86 0.004 260);
+
+  /* One accent: a calm blue for the primary action, links and focus */
+  --primary: oklch(0.5 0.13 255);
+  --primary-hover: oklch(0.45 0.13 255);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.6 0.13 255);
+
+  /* Status colors, used only for status */
+  --status-ok: oklch(0.55 0.13 150);
+  --status-ok-soft: oklch(0.95 0.04 150);
+  --status-review: oklch(0.68 0.15 70);
+  --status-review-soft: oklch(0.96 0.05 80);
+  --status-review-text: oklch(0.45 0.11 60);
+  --status-error: oklch(0.56 0.19 27);
+  --status-error-soft: oklch(0.96 0.03 27);
+
+  /* Evidence highlight in essays */
+  --highlight: oklch(0.94 0.06 90);
+  --highlight-strong: oklch(0.88 0.1 90);
+
+  --radius-control: 6px;
+  --radius-panel: 8px;
+
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-essay: "Source Serif 4", "Source Serif Pro", Georgia, "Times New Roman", serif;
+  --font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.17 0.005 260);
+    --foreground: oklch(0.93 0.003 260);
+    --surface: oklch(0.2 0.005 260);
+    --surface-muted: oklch(0.23 0.006 260);
+    --muted-foreground: oklch(0.7 0.008 260);
+    --border: oklch(0.3 0.006 260);
+    --input: oklch(0.36 0.008 260);
+
+    --primary: oklch(0.66 0.12 255);
+    --primary-hover: oklch(0.72 0.11 255);
+    --primary-foreground: oklch(0.16 0.01 260);
+    --ring: oklch(0.7 0.12 255);
+
+    --status-ok: oklch(0.72 0.13 150);
+    --status-ok-soft: oklch(0.28 0.04 150);
+    --status-review: oklch(0.78 0.14 75);
+    --status-review-soft: oklch(0.3 0.05 75);
+    --status-review-text: oklch(0.85 0.11 80);
+    --status-error: oklch(0.7 0.16 27);
+    --status-error-soft: oklch(0.3 0.06 27);
+
+    --highlight: oklch(0.36 0.06 90);
+    --highlight-strong: oklch(0.45 0.09 90);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-status-ok: var(--status-ok);
+  --color-status-ok-soft: var(--status-ok-soft);
+  --color-status-review: var(--status-review);
+  --color-status-review-soft: var(--status-review-soft);
+  --color-status-review-text: var(--status-review-text);
+  --color-status-error: var(--status-error);
+  --color-status-error-soft: var(--status-error-soft);
+  --color-highlight: var(--highlight);
+  --color-highlight-strong: var(--highlight-strong);
+
+  --radius-control: var(--radius-control);
+  --radius-panel: var(--radius-panel);
+
+  --font-sans: var(--font-ui);
+  --font-serif: var(--font-essay);
+  --font-mono: var(--font-code);
+
+  /* Type scale: 12, 14, 16, 20, 24 px only */
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+  --text-lg: 20px;
+  --text-lg--line-height: 28px;
+  --text-xl: 24px;
+  --text-xl--line-height: 32px;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    color-scheme: light dark;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    line-height: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
+    }
+  }
+}
+
+/* Essay and transcription reading text */
+.essay-text {
+  font-family: var(--font-essay);
+  font-size: 17px;
+  line-height: 1.6;
+}

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: ap_grader_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # CI-only values. Fake models, in-process jobs and local storage: no secrets needed.
+      APP_URL: http://localhost:3000
+      DATABASE_URL: postgres://app:app@localhost:5432/ap_grader_test
+      TEST_DATABASE_URL: postgres://app:app@localhost:5432/ap_grader_test
+      BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+      ENABLE_DEV_LOGIN: "true"
+      MODEL_MODE: fake
+      JOBS_DRIVER: inline
+      STORAGE_DRIVER: local
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Copy lint (banned UI words and feedback phrases)
+        run: npm run lint:copy
+      - name: Migrate
+        run: npm run db:migrate
+      - name: Unit and integration tests
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end
+        run: npm run test:e2e
