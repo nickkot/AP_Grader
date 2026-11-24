@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Capture } from "@/app/(app)/assignments/[id]/upload/capture";
+import { PhoneQr } from "@/app/(app)/assignments/[id]/upload/phone-qr";
 import { PageBody, PageHeader } from "@/components/page-header";
 import { getAssignmentForTeacher, getClassForTeacher } from "@/lib/data";
 import { requireTeacher } from "@/lib/session";
@@ -20,7 +21,8 @@ export default async function UploadPage(props: PageProps<"/assignments/[id]/upl
         title="Upload photos"
         description={`${cls.name}. Pages are matched to students by their QR codes, in any order.`}
       />
-      <Capture assignmentId={assignment.id} />
+      <PhoneQr assignmentId={assignment.id} />
+      <Capture target={{ kind: "teacher", assignmentId: assignment.id }} />
     </PageBody>
   );
 }

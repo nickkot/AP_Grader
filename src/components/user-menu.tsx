@@ -18,9 +18,9 @@ export function UserMenu({ name, email }: { name: string; email: string }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         className="flex size-8 items-center justify-center rounded-full border border-border bg-surface-muted text-xs font-bold"
-        aria-label="Account"
       >
-        {initials || "?"}
+        <span aria-hidden>{initials || "?"}</span>
+        <span className="sr-only">Account</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <div className="px-2 py-1.5">

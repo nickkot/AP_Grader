@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
+// When APP_URL is this computer's network address (to test the phone upload link on a phone),
+// the dev server has to accept requests from that host too.
+const appHost = (() => {
+  try {
+    return new URL(process.env.APP_URL ?? "").hostname;
+  } catch {
+    return null;
+  }
+})();
+
 const nextConfig: NextConfig = {
+  allowedDevOrigins: appHost && appHost !== "localhost" ? [appHost] : [],
   // The app is almost entirely per-teacher, request-time data, so Cache
   // Components and partial prefetching add complexity without benefit here.
   // See docs/DECISIONS.md.

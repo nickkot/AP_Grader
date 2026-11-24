@@ -4,17 +4,17 @@ Scores handwritten AP essays point by point against the rubric, with the teacher
 
 This branch is the **MVP**: the handwritten loop for APUSH DBQ and AP Lang Argument.
 
-1. Create a class and paste the roster.
+1. Create a class and paste the roster, or list students by number so no names are stored.
 2. Create an assignment (prompt, numbered documents, time limit).
 3. Print one packet: prompt page, documents, and QR-coded answer sheets for every student plus spares.
-4. Photograph the pages on a phone (in-app camera, one tap per page) or upload a copier PDF.
+4. Photograph the pages on a phone (scan the code on the Upload photos screen, then one tap per page) or upload a copier PDF.
 5. Pages are matched to students by QR code, cleaned up, and the printed name is blanked out before transcription.
 6. Check the transcription beside the photo, then score. Each rubric row is scored separately, with quotes that are verified against the essay.
 7. Review, adjust, approve (one key), export CSV.
 
 Typed essays (paste, .docx, .pdf, .txt) work too.
 
-Design: `docs/DESIGN.md`. Plans: `docs/PLAN.md` (full product), `docs/STUDENT_PRACTICE_PLAN.md` (student side, awaiting approval). Decisions: `docs/DECISIONS.md`. Deployment: `docs/DEPLOY.md`.
+Design: `docs/DESIGN.md`. Plans: `docs/LAUNCH_PLAN.md` (MVP to teacher pilot), `docs/PLAN.md` (full product), `docs/STUDENT_PRACTICE_PLAN.md` (student side, awaiting approval). Decisions: `docs/DECISIONS.md`. Deployment: `docs/DEPLOY.md`.
 
 ## Run it locally
 

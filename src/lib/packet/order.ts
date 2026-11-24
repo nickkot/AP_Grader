@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 
 import type { PacketSheet } from "./render";
+import { compareStudents, studentName } from "@/lib/student-names";
 
 /**
  * Unambiguous token alphabet: digits 2-9 and capital letters without I, L and O,
@@ -22,6 +23,8 @@ export type OrderStudent = {
   id: string;
   firstName: string;
   lastName: string;
+  /** Set in a numbered class: printed as "Student {number}". */
+  number?: number | null;
   /** Position on the class roster, used for roster order. */
   rosterIndex: number;
 };
@@ -41,17 +44,13 @@ export type OrderSheetsInput = {
   pagesPerStudent: number;
 };
 
-export function studentDisplayName(s: Pick<OrderStudent, "firstName" | "lastName">): string {
-  return [s.firstName.trim(), s.lastName.trim()].filter(Boolean).join(" ");
+export function studentDisplayName(s: Pick<OrderStudent, "firstName" | "lastName" | "number">): string {
+  return studentName(s);
 }
 
+/** Alphabetical by last name, or by number in a numbered class. */
 function compareAlphabetical(a: OrderStudent, b: OrderStudent): number {
-  const opts = { sensitivity: "base" } as const;
-  return (
-    a.lastName.localeCompare(b.lastName, "en", opts) ||
-    a.firstName.localeCompare(b.firstName, "en", opts) ||
-    a.rosterIndex - b.rosterIndex
-  );
+  return compareStudents(a, b) || a.rosterIndex - b.rosterIndex;
 }
 
 /**

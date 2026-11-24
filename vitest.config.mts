@@ -14,5 +14,7 @@ export default defineConfig({
     environment: "node",
     testTimeout: 30_000,
     setupFiles: ["tests/support/setup.ts"],
+    // Integration tests share one database and each file resets it, so files run one at a time.
+    fileParallelism: false,
   },
 });

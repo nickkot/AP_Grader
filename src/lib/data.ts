@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { assignments, auditEvents, classes, students, submissions } from "@/lib/db/schema";
 
+export { rosterLabel, studentName } from "@/lib/student-names";
+
 /**
  * Ownership-checked reads. Every page and action loads records through these,
  * so a teacher can never reach another teacher's classes, students or essays.
@@ -51,12 +53,10 @@ export async function rosterFor(classId: string) {
     .select()
     .from(students)
     .where(and(eq(students.classId, classId), isNull(students.removedAt)))
-    .orderBy(asc(students.lastName), asc(students.firstName));
+    .orderBy(asc(students.number), asc(students.lastName), asc(students.firstName));
 }
 
-export function studentName(s: { firstName: string; lastName: string }) {
-  return [s.firstName, s.lastName].filter(Boolean).join(" ");
-}
+
 
 export async function audit(
   userId: string | null,

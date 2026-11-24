@@ -31,6 +31,7 @@ export type GridRow = {
   studentId: string;
   firstName: string;
   lastName: string;
+  number: number | null;
   submissionId: string | null;
   status: StudentStatus;
   error: string | null;
@@ -100,6 +101,7 @@ export async function loadAssignmentGrid(assignment: { id: string; classId: stri
       studentId: st.id,
       firstName: st.firstName,
       lastName: st.lastName,
+      number: st.number,
       submissionId: sub?.id ?? null,
       status,
       error: sub?.error ?? null,

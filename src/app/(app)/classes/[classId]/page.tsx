@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AddStudentsDialog } from "@/app/(app)/classes/[classId]/add-students-dialog";
+import { ReplaceNamesDialog } from "@/app/(app)/classes/[classId]/replace-names-dialog";
 import { EmptyState, PageBody, PageHeader, SectionTitle } from "@/components/page-header";
 import { Pill } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LinkCard, StatTile, UpNext } from "@/components/ui/card";
 import { ProgressLegend, SegmentedProgress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getClassForTeacher, rosterFor, studentName } from "@/lib/data";
+import { getClassForTeacher, rosterFor, rosterLabel } from "@/lib/data";
 import { assignmentsForClass, countsByAssignment, segmentsFor } from "@/lib/progress";
 import { COURSES, ESSAY_TYPES } from "@/lib/rubrics";
 import { requireTeacher } from "@/lib/session";
@@ -27,14 +28,17 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
   const totalApproved = [...counts.values()].reduce((s, c) => s + c.approved, 0);
   const totalReview = [...counts.values()].reduce((s, c) => s + c.review, 0);
   const needsReview = list.find((a) => (counts.get(a.id)?.review ?? 0) > 0);
+  const numbered = cls.rosterKind === "numbers";
+  const nextNumber = numbered ? Math.max(0, ...roster.map((s) => s.number ?? 0)) + 1 : null;
+  const addStudents = (primary = false) => <AddStudentsDialog classId={cls.id} primary={primary} nextNumber={nextNumber} />;
 
   let upNext: React.ReactNode;
   if (roster.length === 0) {
     upNext = (
       <UpNext
         title="Add your roster"
-        reason="Answer sheets are printed with each student's name, so the class needs students first."
-        action={<AddStudentsDialog classId={cls.id} primary />}
+        reason={`Answer sheets are printed with each student's ${numbered ? "number" : "name"}, so the class needs students first.`}
+        action={addStudents(true)}
       />
     );
   } else if (list.length === 0) {
@@ -132,9 +136,21 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
       </section>
 
       <section className="flex flex-col gap-4">
-        <SectionTitle action={roster.length > 0 ? <AddStudentsDialog classId={cls.id} /> : undefined}>
+        <SectionTitle
+          action={
+            roster.length > 0 ? (
+              <div className="flex flex-wrap justify-end gap-2">
+                {!numbered && <ReplaceNamesDialog classId={cls.id} className={cls.name} studentCount={roster.length} />}
+                {addStudents()}
+              </div>
+            ) : undefined
+          }
+        >
           Roster
         </SectionTitle>
+        {numbered && roster.length > 0 && (
+          <p className="text-sm text-muted-foreground">Students are listed by number. No names are stored in this class.</p>
+        )}
         {roster.length === 0 ? (
           <EmptyState>No students yet.</EmptyState>
         ) : (
@@ -147,8 +163,8 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
             <TableBody>
               {roster.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell className="max-w-0 truncate text-base" title={studentName(s)}>
-                    {s.lastName ? `${s.lastName}, ${s.firstName}` : s.firstName}
+                  <TableCell className="max-w-0 truncate text-base" title={rosterLabel(s)}>
+                    {rosterLabel(s)}
                   </TableCell>
                 </TableRow>
               ))}
