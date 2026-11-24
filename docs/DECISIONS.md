@@ -1,0 +1,60 @@
+# Decisions
+
+Simplest reasonable option, recorded so it can be revisited. Newest last.
+
+## MVP scope (2026-11-24)
+
+The first build is a smaller MVP than milestones 1 to 3 in `docs/PLAN.md`: the handwritten loop for one teacher, for APUSH DBQ and AP Lang Argument. Left for later: organizations and roles beyond "teacher", tenant row-level security, Microsoft/Clever/ClassLink sign-in, the accuracy harness and its CI gate (M3), calibration, LMS and SIS integrations, student accounts, billing.
+
+## Stack
+
+| Decision | Why |
+| --- | --- |
+| Next.js 16 App Router, TypeScript strict, Tailwind 4 | Spec default |
+| `cacheComponents` and partial prefetching off | Nearly every screen is per-teacher request-time data; Cache Components would mean a Suspense boundary around every session read for no gain |
+| Drizzle ORM with postgres.js, `prepare: false` | Typed, plain SQL; works with Neon's pooled endpoint |
+| Better Auth (Google + dev-only email login) | Auth data stays in our database, which keeps student identity out of another vendor and shortens DPAs. Supports MFA, account linking and generic OIDC for later |
+| Dev login refused on a public https `APP_URL` | `next build` runs as production locally and in CI too, so the deployed URL is what identifies a real deployment |
+| A deployed site must use `MODEL_MODE=anthropic`, `JOBS_DRIVER=inngest`, `STORAGE_DRIVER=s3` | Prevents silently serving fake scores or losing uploads |
+| shadcn/ui components written in by hand | The shadcn registry is blocked from the build container; the components are copy-in source either way |
+| System font stack, Georgia-class serif for essays | Allowed by the design system; avoids a font download at build |
+| Inngest for jobs, with an in-process "inline" driver for dev and tests | Managed retries and concurrency in production; no extra process locally |
+| Browser uploads straight to S3 with presigned PUT | Vercel functions cap request bodies at 4.5 MB; phone photos are larger |
+| Photos converted to JPEG (max 2400 px) in the browser before upload | Smaller uploads on school wifi; handles HEIC on iPhones; one format on the server |
+| In-app camera (getUserMedia) with a shutter button | Meets the "1 tap per page" budget. Auto-capture and edge detection come in M6 |
+| PDF rasterizing with unpdf (MIT, bundles pdf.js) and @napi-rs/canvas (MIT) | mupdf was tried first and dropped: it is AGPL-3.0 |
+| QR reading with zxing-wasm, wasm loaded from node_modules | It defaults to a CDN; we never fetch code at runtime |
+
+## Data and privacy
+
+| Decision | Why |
+| --- | --- |
+| Ownership checks in one data-access module instead of RLS for the MVP | One teacher per account in the MVP. Tenant RLS arrives with the organization model (M1 proper) |
+| QR codes hold an opaque 12-character token only | A lost page reveals nothing; the token maps to student and page in our database |
+| The image sent to the model has the header band blanked above the QR code | The printed student name never reaches the model. Pages without a QR get the top 12% blanked |
+| Text redaction: roster full names, the author's name in short header lines and after "my name is", and 5+ digit numbers | Redacting a student's surname everywhere would break history essays ("Jackson vetoed the bank") |
+| Reprinting reuses existing QR tokens | Sheets from an earlier print still match |
+| A newer photo of the same page replaces the older one | Retakes just work; the old photo stays stored for the record |
+| Original photos kept, processed copies stored separately | Record of authenticity; the model sees only the processed copy |
+
+## Scoring
+
+| Decision | Why |
+| --- | --- |
+| Haiku 5.5 transcribes; pages under 0.8 mean confidence are retried on Sonnet 5.5 | User chose cheaper models from day one; the retry protects hard handwriting |
+| Sonnet 5.5 scores, adaptive thinking, effort `medium` (env `SCORING_EFFORT`) | Cost; to be checked against the benchmark in M3 |
+| One call per rubric row; the first row runs alone to write the prompt cache, the rest run in parallel | Rows scored independently as the spec asks, at cached-prefix prices |
+| Server-side refusal fallback (`fallbacks: "default"`) on Sonnet scoring calls | Recommended default for Sonnet 5.5; essays about violence in history should not fail outright |
+| Structured outputs validated with Zod; one retry on a schema or rule failure, then flag the row | Spec |
+| Quotes must appear verbatim (ignoring whitespace, quote and dash style) or the row is flagged | `student-feedback-writing`: "quote or it did not happen" |
+| Flags: confidence below 0.7, borderline, unverified quote, feedback rule broken, row failed | Teacher sees what to check first |
+| Confirming a transcription sends the essay straight to scoring | One click instead of two. Auto-confirm thresholds come in M6 |
+| Approving accepts every row not yet reviewed | Meets "approve with no changes: 1 click or key". Approve moves to the next essay that needs review |
+| Assignment locks (prompt, sources, rubric) at first score | Scores stay tied to what students saw. Full assignment versioning comes later |
+| Prompt text lists banned phrases built from `src/lib/copy/banned.ts` | One source of truth for the prompt, the runtime check, tests and the CI copy lint |
+
+## Known limits
+
+- Copier PDFs saved as JPEG 2000 will not render (the bundled pdf.js has no JPX decoder). Ordinary JPEG and JBIG2 scans work.
+- Evidence links to the page, not the exact spot on the photo. Word positions need an OCR provider with geometry (open question in `docs/PLAN.md`).
+- No accuracy benchmark yet: scores from real models are unmeasured until M3.
