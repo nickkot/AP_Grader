@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PlusIcon } from "lucide-react";
+import { CircleHelpIcon, PlusIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -68,6 +68,15 @@ export function SidebarNav({ courses, onNavigate }: { courses: NavCourse[]; onNa
       <Link href="/classes/new" onClick={onNavigate} className={cn(item("/classes/new", isActive("/classes/new")), "gap-2 text-primary")}>
         <PlusIcon className="size-4" aria-hidden />
         Create class
+      </Link>
+      <Link
+        href="/how-it-works"
+        onClick={onNavigate}
+        className={cn(item("/how-it-works", pathname === "/how-it-works"), "gap-2")}
+        aria-current={pathname === "/how-it-works" ? "page" : undefined}
+      >
+        <CircleHelpIcon className="size-4" aria-hidden />
+        How it works
       </Link>
     </nav>
   );

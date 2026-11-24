@@ -33,9 +33,10 @@ export async function GET(req: Request, ctx: RouteContext<"/api/assignments/[id]
   const runIds = await latestRunIds(subs.map((s) => s.id));
   const rows = runIds.size ? await db.query.rowScores.findMany({ where: inArray(rowScores.scoreRunId, [...runIds.values()]) }) : [];
 
+  // A numbered class has no names: its first column is the student number, which matches the teacher's own key.
+  const numbered = cls?.rosterKind === "numbers";
   const header = [
-    "Last name",
-    "First name",
+    ...(numbered ? ["Student number"] : ["Last name", "First name"]),
     "Status",
     ...rubric.rows.map((r) => `${r.label} (${r.maxPoints})`),
     `Total (${rubric.maxPoints})`,
@@ -51,7 +52,8 @@ export async function GET(req: Request, ctx: RouteContext<"/api/assignments/[id]
     const points = rubric.rows.map((r) => (hasScores ? (byKey.get(r.key)?.points ?? "") : ""));
     const total = hasScores ? rubric.rows.reduce((s, r) => s + (byKey.get(r.key)?.points ?? 0), 0) : "";
     const comments = rubric.rows.map((r) => (status === "approved" ? (byKey.get(r.key)?.studentFeedback ?? "") : ""));
-    lines.push([st.lastName, st.firstName, STATUS_LABEL[status].label, ...points, total, ...comments].map(csvCell).join(","));
+    const who = numbered ? [st.number] : [st.lastName, st.firstName];
+    lines.push([...who, STATUS_LABEL[status].label, ...points, total, ...comments].map(csvCell).join(","));
   }
 
   await audit(teacher.id, "scores.export", "assignment", assignment.id);

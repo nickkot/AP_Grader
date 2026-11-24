@@ -7,7 +7,7 @@ import { EmptyState, PageBody, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
-import { getAssignmentForTeacher, rosterFor, studentName } from "@/lib/data";
+import { getAssignmentForTeacher, rosterFor, rosterLabel, studentName } from "@/lib/data";
 import { presignDownload } from "@/lib/storage";
 import { requireTeacher } from "@/lib/session";
 
@@ -50,7 +50,7 @@ export default async function MatchPage(props: PageProps<"/assignments/[id]/matc
               key={p.id}
               assignmentId={assignment.id}
               page={{ id: p.id, url: p.url, originalUrl: null, reason: p.error, pageNumber: p.pageNumber, capturedAt: p.capturedAt.toISOString() }}
-              students={roster.map((s) => ({ id: s.id, name: studentName(s), sortName: s.lastName ? `${s.lastName}, ${s.firstName}` : s.firstName }))}
+              students={roster.map((s) => ({ id: s.id, name: studentName(s), sortName: rosterLabel(s) }))}
               maxPages={assignment.answerPagesPerStudent}
             />
           ))}

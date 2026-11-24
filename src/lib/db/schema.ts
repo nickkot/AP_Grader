@@ -104,6 +104,8 @@ export const classes = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     course: courseEnum("course").notNull(),
     name: text("name").notNull(),
+    /** "numbers": students are listed as Student 1, Student 2, and no names are stored. */
+    rosterKind: text("roster_kind", { enum: ["names", "numbers"] }).notNull().default("names"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },
@@ -120,12 +122,15 @@ export const students = pgTable(
     teacherId: text("teacher_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    /** Empty in a numbered class. */
     firstName: text("first_name").notNull(),
     lastName: text("last_name").notNull().default(""),
+    /** Set in a numbered class: the student is shown as "Student {number}". */
+    number: integer("number"),
     removedAt: timestamp("removed_at", { withTimezone: true }),
     ...timestamps,
   },
-  (t) => [index("student_class_idx").on(t.classId)],
+  (t) => [index("student_class_idx").on(t.classId), uniqueIndex("student_class_number_idx").on(t.classId, t.number)],
 );
 
 /* ------------------------------------------------------------------ */
@@ -231,6 +236,29 @@ export const submissions = pgTable(
   (t) => [uniqueIndex("submission_assignment_student_uniq").on(t.assignmentId, t.studentId)],
 );
 
+/**
+ * A short-lived link, shown as a QR code on the teacher's computer, that lets their phone
+ * upload page photos to one assignment without signing in. It can only add pages: it
+ * cannot read essays, scores or the roster.
+ */
+export const phoneLinks = pgTable(
+  "phone_link",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** SHA-256 of the token in the link. The token itself is never stored. */
+    tokenHash: text("token_hash").notNull().unique(),
+    assignmentId: uuid("assignment_id")
+      .notNull()
+      .references(() => assignments.id, { onDelete: "cascade" }),
+    teacherId: text("teacher_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("phone_link_assignment_idx").on(t.assignmentId)],
+);
+
 export const uploadBatches = pgTable("upload_batch", {
   id: uuid("id").primaryKey().defaultRandom(),
   assignmentId: uuid("assignment_id")
@@ -239,6 +267,8 @@ export const uploadBatches = pgTable("upload_batch", {
   uploadedBy: text("uploaded_by")
     .notNull()
     .references(() => user.id),
+  /** Set when the photos came from a phone through a phone link. */
+  phoneLinkId: uuid("phone_link_id").references(() => phoneLinks.id, { onDelete: "set null" }),
   kind: text("kind", { enum: ["photos", "pdf"] }).notNull(),
   /** For PDF uploads: the original file, split into pages by a background job. */
   pdfKey: text("pdf_key"),

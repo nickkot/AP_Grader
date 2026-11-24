@@ -1,5 +1,26 @@
 # Changelog
 
+## Phone upload, numbered rosters, How it works (2026-11-24)
+
+**Added**
+- Phone upload by QR code. On a computer, Upload photos shows a Show code card. The phone opens a camera page for that assignment with no sign-in. The link works for 2 hours, only adds pages, and stores only a hash of its token.
+- Numbered rosters. A class can list students as Student 1, Student 2 and so on, with no names stored. Packets, screens and the CSV export use the number. A named class can switch to numbers after the teacher downloads the key.
+- How it works page in the sidebar: eight steps, rubric flags, typed essays, keyboard shortcuts.
+- `docs/LAUNCH_PLAN.md`: steps from this MVP to a teacher pilot.
+
+**Fixed**
+- `npm run db:seed` failed on a second run (page photos blocked deleting the demo user).
+- Upload batches are now checked against the assignment when a photo is registered and when progress is read.
+- "1 page need matching" now reads "1 page needs matching".
+- The account button's screen-reader name did not include its visible initials (axe).
+- Integration test files reset the same database, so they now run one at a time.
+
+**Checks:** typecheck, lint, copy lint, 122 unit and integration tests (new: phone links, numbered rosters, student names), production build, the end-to-end teacher flow.
+
+**Visual QA:** How it works, upload with the QR dialog, the phone page (ready, after upload, expired link), Create class with numbers, a numbered class, Add students for numbers, Replace names dialog, a class and assignment after the switch. Laptop 1440x900 and iPhone 14, light and dark. Fixed: two primary buttons on the laptop upload screen (Open camera is now secondary there), a repeated sentence on the phone's done message. No serious or critical axe issues.
+
+**UX simplicity review:** photographing a class set is still 1 tap per page after the camera opens; getting the camera onto a phone is 1 click and 1 scan. Each new screen has one primary button. Replacing names is destructive, so it confirms and needs the key download first.
+
 ## Learning-product design (2026-11-24)
 
 New design based on patterns from Khan Academy's open-source design system (Wonder Blocks, MIT). It copies the structure only, never the brand: no Khan Academy name, logo, signature colors or characters. Full rationale in `docs/DESIGN.md`. The `design-system` skill is updated to match.

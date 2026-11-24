@@ -53,6 +53,25 @@ The first build is a smaller MVP than milestones 1 to 3 in `docs/PLAN.md`: the h
 | Assignment locks (prompt, sources, rubric) at first score | Scores stay tied to what students saw. Full assignment versioning comes later |
 | Prompt text lists banned phrases built from `src/lib/copy/banned.ts` | One source of truth for the prompt, the runtime check, tests and the CI copy lint |
 
+## Phone upload links (2026-11-24)
+
+| Decision | Why |
+| --- | --- |
+| The upload screen on a computer shows a QR code that opens a camera page on the teacher's phone, with no sign-in | Signing in on a phone in the middle of class is the slowest step. The printed sheets' QR codes still work too, after sign-in |
+| The link can only add pages to one assignment, for 2 hours, up to 400 pages | Anyone who photographs the screen gets nothing but a way to add pages to the matching queue. It cannot read essays, scores or the roster |
+| Only a SHA-256 hash of the link token is stored | A database leak does not hand out working links |
+| Teacher and phone uploads share one module (`src/lib/uploads.ts`) | Same checks either way: the key, the batch and the page must belong to the assignment |
+
+## Numbered rosters (2026-11-24)
+
+| Decision | Why |
+| --- | --- |
+| A class lists students by name or by number. A numbered class stores no names at all | Students are minors. A teacher who keeps the name key outside the app removes the most sensitive field from our database |
+| A named class can switch to numbers. The teacher downloads the key first, and the switch is refused if the roster changed since | Names are deleted for good, so the key is the only record. The check stops a key and the new numbers from disagreeing |
+| Numbers follow the roster's alphabetical order, then students removed from the roster | Predictable, and the same order the key shows |
+| Export has a "Student number" column for numbered classes | Matches the teacher's key and gradebook without names |
+| Page photos taken before a switch keep the printed names | Rewriting stored photos is out of scope. The dialog says so |
+
 ## Known limits
 
 - Copier PDFs saved as JPEG 2000 will not render (the bundled pdf.js has no JPX decoder). Ordinary JPEG and JBIG2 scans work.

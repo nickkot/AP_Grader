@@ -53,6 +53,7 @@ async function discoverRoutes(ctx: BrowserContext): Promise<Record<string, strin
     classes: "/classes",
     class: classHref!,
     "new-class": "/classes/new",
+    "how-it-works": "/how-it-works",
     "new-assignment": `/assignments/new?classId=${classHref!.split("/").pop()}`,
     assignment: assignmentHref!,
     upload: `${assignmentHref}/upload`,

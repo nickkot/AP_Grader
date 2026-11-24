@@ -48,7 +48,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/assignments/[id]
     .select()
     .from(students)
     .where(and(eq(students.classId, cls.id), isNull(students.removedAt)))
-    .orderBy(asc(students.createdAt), asc(students.id));
+    .orderBy(asc(students.number), asc(students.createdAt), asc(students.id));
 
   const { studentTokens, spareTokens } = await ensurePacketTokens({
     assignmentId: assignment.id,
@@ -58,7 +58,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/assignments/[id]
   });
 
   const sheets = orderSheets({
-    students: roster.map((s, i) => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, rosterIndex: i })),
+    students: roster.map((s, i) => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, number: s.number, rosterIndex: i })),
     tokens: [...studentTokens, ...spareTokens],
     order: opts.order,
     pagesPerStudent,

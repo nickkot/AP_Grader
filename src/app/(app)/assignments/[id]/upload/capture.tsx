@@ -1,17 +1,53 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CameraIcon, RotateCwIcon } from "lucide-react";
 
 import { StatusDot } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/misc";
+import { phoneBatchProgress, presignPhonePhoto, registerPhonePhoto, startPhoneBatch } from "@/lib/actions/phone-uploads";
 import { batchProgress, finishPdf, presignPdf, presignPhoto, registerPhoto, startUploadBatch } from "@/lib/actions/uploads";
+import type { BatchProgress, PagePhoto } from "@/lib/uploads";
 import { pluralize } from "@/lib/utils";
 
 type Shot = { id: number; blob: Blob; preview: string; state: "uploading" | "done" | "failed"; error?: string };
-type Progress = Awaited<ReturnType<typeof batchProgress>>;
+
+/** Who is uploading: the signed-in teacher, or a phone that opened a phone link. */
+export type CaptureTarget = { kind: "teacher"; assignmentId: string } | { kind: "phone"; token: string };
+
+type UploadApi = {
+  startBatch: () => Promise<string>;
+  presign: (contentType: string) => Promise<{ pageId: string; key: string; url: string }>;
+  register: (input: PagePhoto) => Promise<void>;
+  progress: (batchId: string) => Promise<BatchProgress>;
+};
+
+/** Actions return { error } for problems the teacher can fix. Turn those into thrown errors with the same message. */
+function unwrap<T extends object>(result: T): Exclude<T, { error: string }> {
+  if ("error" in result && typeof result.error === "string") throw new Error(result.error);
+  return result as Exclude<T, { error: string }>;
+}
+
+function uploadApi(target: CaptureTarget): UploadApi {
+  if (target.kind === "phone") {
+    const { token } = target;
+    return {
+      startBatch: async () => unwrap(await startPhoneBatch(token)).batchId,
+      presign: async (contentType) => unwrap(await presignPhonePhoto(token, contentType)),
+      register: async (input) => void unwrap(await registerPhonePhoto(token, input)),
+      progress: async (batchId) => unwrap(await phoneBatchProgress(token, batchId)),
+    };
+  }
+  const { assignmentId } = target;
+  return {
+    startBatch: async () => (await startUploadBatch(assignmentId, "photos")).batchId,
+    presign: async (contentType) => unwrap(await presignPhoto(assignmentId, contentType)),
+    register: async (input) => void unwrap(await registerPhoto({ ...input, assignmentId })),
+    progress: (batchId) => batchProgress(assignmentId, batchId),
+  };
+}
 
 const MAX_SIDE = 2400;
 const UPLOAD_CONCURRENCY = 3;
@@ -41,7 +77,11 @@ async function toJpeg(source: Blob | HTMLVideoElement): Promise<Blob> {
   );
 }
 
-export function Capture({ assignmentId }: { assignmentId: string }) {
+export function Capture({ target }: { target: CaptureTarget }) {
+  const targetKey = target.kind === "phone" ? target.token : target.assignmentId;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- targetKey identifies the target.
+  const api = useMemo(() => uploadApi(target), [target.kind, targetKey]);
+  const assignmentId = target.kind === "teacher" ? target.assignmentId : null;
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const batchRef = useRef<Promise<string> | null>(null);
@@ -52,20 +92,27 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [shots, setShots] = useState<Shot[]>([]);
-  const [progress, setProgress] = useState<Progress | null>(null);
+  const [progress, setProgress] = useState<BatchProgress | null>(null);
   const [batchId, setBatchId] = useState<string | null>(null);
   const [pdfState, setPdfState] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
 
   const getBatch = useCallback(() => {
     if (!batchRef.current) {
-      batchRef.current = startUploadBatch(assignmentId, "photos").then((r) => {
-        setBatchId(r.batchId);
-        return r.batchId;
-      });
+      batchRef.current = api.startBatch().then(
+        (id) => {
+          setBatchId(id);
+          return id;
+        },
+        (err) => {
+          // Let the next photo try again.
+          batchRef.current = null;
+          throw err;
+        },
+      );
     }
     return batchRef.current;
-  }, [assignmentId]);
+  }, [api]);
 
   const update = (id: number, patch: Partial<Shot>) => setShots((all) => all.map((s) => (s.id === id ? { ...s, ...patch } : s)));
 
@@ -73,25 +120,22 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
     async (shot: Shot) => {
       try {
         const batch = await getBatch();
-        const signed = await presignPhoto(assignmentId, "image/jpeg");
-        if ("error" in signed) throw new Error(signed.error);
+        const signed = await api.presign("image/jpeg");
         const put = await fetch(signed.url, { method: "PUT", body: shot.blob, headers: { "Content-Type": "image/jpeg" } });
         if (!put.ok) throw new Error("Upload failed. Check your connection.");
-        const reg = await registerPhoto({
-          assignmentId,
+        await api.register({
           batchId: batch,
           pageId: signed.pageId,
           key: signed.key,
           contentType: "image/jpeg",
           sizeBytes: shot.blob.size,
         });
-        if ("error" in reg) throw new Error(reg.error);
         update(shot.id, { state: "done" });
       } catch (err) {
         update(shot.id, { state: "failed", error: err instanceof Error ? err.message : "Upload failed." });
       }
     },
-    [assignmentId, getBatch],
+    [api, getBatch],
   );
 
   // Upload a few photos at a time. The function reads itself through a ref so it can
@@ -168,7 +212,7 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
   }
 
   async function onPdf(file: File | undefined) {
-    if (!file) return;
+    if (!file || !assignmentId) return;
     setPdfState("Uploading PDF");
     try {
       const { batchId: pdfBatch } = await startUploadBatch(assignmentId, "pdf");
@@ -205,7 +249,7 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
     let stop = false;
     const tick = async () => {
       try {
-        const p = await batchProgress(assignmentId, batchId);
+        const p = await api.progress(batchId);
         if (!stop) setProgress(p);
       } catch {
         /* keep polling */
@@ -217,7 +261,7 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
       stop = true;
       clearInterval(id);
     };
-  }, [assignmentId, batchId]);
+  }, [api, batchId]);
 
   const uploading = shots.filter((s) => s.state === "uploading").length;
   const failed = shots.filter((s) => s.state === "failed");
@@ -246,10 +290,17 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <Button size="lg" onClick={startCamera}>
+          {/* On a computer the phone code is the main way in, so the camera button steps back there. */}
+          <Button size="lg" onClick={startCamera} className={assignmentId ? "md:hidden" : undefined}>
             <CameraIcon aria-hidden />
             Open camera
           </Button>
+          {assignmentId && (
+            <Button size="lg" variant="outline" onClick={startCamera} className="hidden md:inline-flex">
+              <CameraIcon aria-hidden />
+              Open camera
+            </Button>
+          )}
           {cameraError && <p className="text-sm text-critical">{cameraError}</p>}
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
@@ -258,12 +309,14 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
                 <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => onFiles(e.target.files)} />
               </label>
             </Button>
-            <Button asChild variant="outline">
-              <label>
-                Upload a copier PDF
-                <input type="file" accept="application/pdf" className="sr-only" onChange={(e) => onPdf(e.target.files?.[0])} />
-              </label>
-            </Button>
+            {assignmentId && (
+              <Button asChild variant="outline">
+                <label>
+                  Upload a copier PDF
+                  <input type="file" accept="application/pdf" className="sr-only" onChange={(e) => onPdf(e.target.files?.[0])} />
+                </label>
+              </Button>
+            )}
           </div>
           <p className="text-sm text-muted-foreground">
             Lay each page flat in good light with the QR code in view. Take one photo per page.
@@ -276,11 +329,20 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
         <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 text-base shadow-low sm:p-6">
           <p>
             {progress.done} of {progress.total} pages read
-            {progress.unmatched > 0 && <span>. {pluralize(progress.unmatched, "page")} need matching</span>}
+            {progress.unmatched > 0 && (
+              <span>
+                . {pluralize(progress.unmatched, "page")} {progress.unmatched === 1 ? "needs" : "need"} matching
+              </span>
+            )}
             {progress.failed > 0 && <span>. {pluralize(progress.failed, "page")} could not be read</span>}
           </p>
           <Progress value={(progress.done / progress.total) * 100} aria-label="Pages read" />
-          {progress.working === 0 && uploading === 0 && (
+          {progress.working === 0 && uploading === 0 && !assignmentId && (
+            <p className="text-sm text-muted-foreground">
+              Uploads are done. {progress.unmatched > 0 ? "Match the remaining pages on your computer. " : ""}You can close this page.
+            </p>
+          )}
+          {progress.working === 0 && uploading === 0 && assignmentId && (
             <div className="flex gap-2">
               {progress.unmatched > 0 && (
                 <Button asChild size="sm" variant="outline">

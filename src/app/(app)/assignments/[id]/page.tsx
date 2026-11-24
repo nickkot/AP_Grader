@@ -11,7 +11,7 @@ import { Banner, Card, CardContent, UpNext } from "@/components/ui/card";
 import { Tooltip } from "@/components/ui/misc";
 import { MasteryCell, MasteryLegend, ProgressLegend, SegmentedProgress, type Segment } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getAssignmentForTeacher, getClassForTeacher } from "@/lib/data";
+import { getAssignmentForTeacher, getClassForTeacher, rosterLabel } from "@/lib/data";
 import { COURSES, ESSAY_TYPES } from "@/lib/rubrics";
 import { requireTeacher } from "@/lib/session";
 import { loadAssignmentGrid, STATUS_LABEL } from "@/lib/views";
@@ -210,7 +210,7 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[id]
             </TableHeader>
             <TableBody>
               {grid.map((g) => {
-                const name = g.lastName ? `${g.lastName}, ${g.firstName}` : g.firstName;
+                const name = rosterLabel(g);
                 const meta = STATUS_LABEL[g.status];
                 const badge = (
                   <StatusBadge tone={meta.tone}>
