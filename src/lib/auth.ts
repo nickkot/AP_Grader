@@ -36,6 +36,18 @@ function createAuth() {
     account: {
       accountLinking: { enabled: true, trustedProviders: ["google"] },
     },
+    rateLimit: {
+      customRules: {
+        // Better Auth allows 3 sign-ins per 10 seconds per IP by default. A class signing in with
+        // Google at the start of a period shares one school IP. Starting the Google flow only
+        // redirects to Google, which does the password checks, so a class-sized limit is safe.
+        "/sign-in/social": { window: 60, max: 300 },
+        // Dev login never runs on a public URL (env.ts refuses it); tests sign in several accounts.
+        ...(e.ENABLE_DEV_LOGIN
+          ? { "/sign-in/email": { window: 10, max: 100 }, "/sign-up/email": { window: 10, max: 100 } }
+          : {}),
+      },
+    },
     advanced: {
       useSecureCookies: e.APP_URL.startsWith("https://"),
       database: { generateId: () => crypto.randomUUID() },

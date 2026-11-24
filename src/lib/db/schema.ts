@@ -26,6 +26,8 @@ export const user = pgTable("user", {
   image: text("image"),
   createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).notNull().defaultNow(),
+  /** "student" once the account joins a class with a class code. Students never reach teacher pages. */
+  kind: text("kind", { enum: ["teacher", "student"] }).notNull().default("teacher"),
 });
 
 export const session = pgTable(
@@ -106,6 +108,8 @@ export const classes = pgTable(
     name: text("name").notNull(),
     /** "numbers": students are listed as Student 1, Student 2, and no names are stored. */
     rosterKind: text("roster_kind", { enum: ["names", "numbers"] }).notNull().default("names"),
+    /** Code students type at /join. Made the first time the teacher opens the class. */
+    joinCode: text("join_code").unique(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },
@@ -203,6 +207,59 @@ export const qrTokens = pgTable(
 /* Submissions, pages and transcriptions                               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * A student account that joined a class with its class code. `studentId` is the roster
+ * entry the student claimed (by name, or by number in a numbered class).
+ */
+export const classMemberships = pgTable(
+  "class_membership",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    classId: uuid("class_id")
+      .notNull()
+      .references(() => classes.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    studentId: uuid("student_id").references(() => students.id, { onDelete: "set null" }),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("class_membership_class_user_uniq").on(t.classId, t.userId),
+    uniqueIndex("class_membership_student_uniq").on(t.studentId),
+    index("class_membership_user_idx").on(t.userId),
+  ],
+);
+
+/**
+ * One practice essay by a student. Prompts live in code (`src/lib/practice/prompts.ts`),
+ * versioned like rubrics. The draft is saved on the attempt while the student writes.
+ */
+export const practiceAttempts = pgTable(
+  "practice_attempt",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    promptKey: text("prompt_key").notNull(),
+    promptVersion: integer("prompt_version").notNull(),
+    mode: text("mode", { enum: ["timed", "untimed"] }).notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Timed only. End of the reading period, if the essay type has one. */
+    readingEndsAt: timestamp("reading_ends_at", { withTimezone: true }),
+    /** Timed only. The essay is submitted automatically at this time. */
+    deadlineAt: timestamp("deadline_at", { withTimezone: true }),
+    draftText: text("draft_text").notNull().default(""),
+    /** Increases with every autosave from the browser, so an older save never overwrites a newer one. */
+    draftSeq: integer("draft_seq").notNull().default(0),
+    draftSavedAt: timestamp("draft_saved_at", { withTimezone: true }),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    autoSubmitted: boolean("auto_submitted").notNull().default(false),
+  },
+  (t) => [index("practice_attempt_user_idx").on(t.userId)],
+);
+
 export const inputKindEnum = pgEnum("input_kind", ["handwritten", "typed"]);
 export const submissionStatusEnum = pgEnum("submission_status", [
   "transcribing",
@@ -217,12 +274,13 @@ export const submissions = pgTable(
   "submission",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    assignmentId: uuid("assignment_id")
-      .notNull()
-      .references(() => assignments.id, { onDelete: "cascade" }),
-    studentId: uuid("student_id")
-      .notNull()
-      .references(() => students.id, { onDelete: "cascade" }),
+    /** "practice": a student's own practice essay, scored by the same pipeline. It has no assignment or roster student. */
+    context: text("context", { enum: ["assignment", "practice"] }).notNull().default("assignment"),
+    assignmentId: uuid("assignment_id").references(() => assignments.id, { onDelete: "cascade" }),
+    studentId: uuid("student_id").references(() => students.id, { onDelete: "cascade" }),
+    practiceAttemptId: uuid("practice_attempt_id")
+      .unique()
+      .references(() => practiceAttempts.id, { onDelete: "cascade" }),
     inputKind: inputKindEnum("input_kind").notNull(),
     status: submissionStatusEnum("status").notNull(),
     typedText: text("typed_text"),

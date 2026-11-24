@@ -24,7 +24,7 @@ Needs Node 22 and Postgres 16.
 cp .env.example .env            # then set BETTER_AUTH_SECRET
 npm install
 npm run db:migrate
-npm run db:seed                 # demo teacher: demo@example.com / demo-password
+npm run db:seed                 # demo teacher: demo@example.com / demo-password, demo student: student@example.com / demo-password
 npm run dev
 ```
 

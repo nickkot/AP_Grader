@@ -1,5 +1,27 @@
 # Changelog
 
+## Student practice, P1 (2026-11-24)
+
+**Added**
+- Student accounts. Students join at `/join` with the class code from the class page, then their name (or number in a numbered class). Teachers see the code, how many joined, and a Joined pill per student.
+- Practice home with the next essay to write, a note that the teacher can see practice work, and every essay written so far.
+- Library of 11 prompts (10 AP Lang argument, 1 APUSH DBQ) with course and status filters.
+- Writing room: timed with reading period, countdown and auto-submit, or untimed. Autosave every 5 seconds. Spell check off when timed. Prompt beside the editor on a laptop, tabs on a phone.
+- Practice essays scored by the same pipeline as assignments. Results labeled as a practice estimate, with quotes from the student's essay, a next step per row, and a note on rows the model was unsure about.
+- Demo student `student@example.com` / `demo-password`, joined to Period 3 with one scored essay.
+
+**Fixed**
+- Better Auth's default rate limit (3 sign-ins per 10 seconds per IP) would block a class signing in with Google from one school network.
+- Sign-in accepted `next=//other-site`, an open redirect.
+
+**Checks:** typecheck, lint, copy lint, 137 unit and integration tests (new: joining, timing, autosave order, deadlines, the daily cap, privacy of practice essays, name redaction, the sign-in rate limit), production build, end-to-end teacher flow and new end-to-end student flow.
+
+**Visual QA:** practice home, results, library, DBQ prompt, writing room (timed, laptop and phone), submit dialog, join (signed out, code, claim, wrong code), teacher class page with the code. Laptop and iPhone 14, light and dark. Fixed: the writing room's bar squeezed the title on phones, and the student header did not line up with the writing room. No serious or critical axe issues.
+
+**UX simplicity review:** start a timed essay from practice home in 1 tap (budget 2). Results open by themselves when scoring finishes (budget 0). Each screen has one primary button. Submitting asks once, because it cannot be undone.
+
+**Not for real students yet:** practice P2 (moderation, "Ask why" guardrails) must ship first. See `docs/STUDENT_PRACTICE_PLAN.md`.
+
 ## Phone upload, numbered rosters, How it works (2026-11-24)
 
 **Added**

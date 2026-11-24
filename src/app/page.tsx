@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { getTeacher } from "@/lib/session";
+import { getSessionUser } from "@/lib/session";
 
 export default async function Home() {
-  const teacher = await getTeacher();
-  redirect(teacher ? "/classes" : "/sign-in");
+  const u = await getSessionUser();
+  redirect(!u ? "/sign-in" : u.kind === "student" ? "/practice" : "/classes");
 }

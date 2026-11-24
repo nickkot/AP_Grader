@@ -18,7 +18,8 @@ export async function countsByAssignment(assignmentIds: string[]): Promise<Map<s
     .groupBy(submissions.assignmentId, submissions.status);
   for (const id of assignmentIds) out.set(id, { approved: 0, review: 0, working: 0, failed: 0 });
   for (const r of rows) {
-    const c = out.get(r.assignmentId)!;
+    const c = r.assignmentId ? out.get(r.assignmentId) : undefined;
+    if (!c) continue;
     if (r.status === "approved") c.approved += r.n;
     else if (r.status === "scored" || r.status === "needs_confirmation") c.review += r.n;
     else if (r.status === "failed") c.failed += r.n;

@@ -1,6 +1,6 @@
 # Student practice: build plan
 
-Status: **draft, awaiting approval.** No student practice code is written until this plan is approved.
+Status: **approved 2026-11-24. P1 (practice core) built.** Next: P2 (coaching guardrails and moderation), which must ship before any real student uses practice. Answers taken for the open questions are in section 11.
 
 Source spec: `docs/STUDENT_PRACTICE_PROMPT.md`. Builds on `docs/PLAN.md` and the teacher MVP (branch `mvp/handwritten-loop`).
 
@@ -170,3 +170,37 @@ Same pipeline as the teacher side: about $0.13 for a typed DBQ, about $0.15 hand
 7. **Safety alerts.** Who receives alerts for school-linked students (counselor, AP coordinator, district contact)? For independent students under 18, do we notify the guardian?
 8. **Exam timing table.** I'll store real AP timing per essay type as data and check it against the current College Board exam descriptions before P1. Do you want a teacher to sign off on those numbers?
 9. **Independent students at launch.** Do you want independent (paid) students in the first public release, or school-linked only at first? School-linked only removes P7 from the critical path.
+
+---
+
+## 11. Answers taken (2026-11-24)
+
+The plan was approved by choosing the full practice plan. Where a question was open, the plan's own recommendation was taken. Each can still be changed.
+
+| # | Question | Answer taken |
+| --- | --- | --- |
+| 1 | Timing | Start now, right after the teacher MVP. Class-code sign-in was pulled forward into P1 |
+| 2 | Guardian consent | Not needed until P7 (independent students). School-linked students only until then |
+| 3 | Prompt authorship | We draft. P1 ships 10 AP Lang argument prompts and 1 APUSH DBQ (the demo one). Every prompt is marked `teacherReviewed: false` until an AP teacher signs it off. 9 more DBQs are needed, each with archive-checked documents |
+| 4 | What teachers see | Default stands: practice after the student joined the class. Built in P6. The join page and practice home already tell students their teacher can see their practice |
+| 5 | License | Unlimited for school-linked students later; P1 caps each student at 10 scored essays a day |
+| 6 | "Ask why" limit | 5 per row per attempt, 30 a day (P2) |
+| 7 | Safety alerts | Not answered. Needed before P2 ships |
+| 8 | Exam timing | Stored as data in `src/lib/practice/timing.ts` (DBQ: 15-minute reading period plus 45 minutes; Argument: 40 minutes). A teacher should check them against the current Course and Exam Description |
+| 9 | Independent students at launch | School-linked only at first. P7 is off the critical path |
+
+### What P1 built
+
+- Student accounts: `user.kind` is `teacher` or `student`. Students join at `/join` with the class code shown on the class page, then give their name as the teacher has it (or their number in a numbered class). The roster is never shown to them. 10 failed tries per hour at most.
+- Practice library with 11 prompts, filters by course and status.
+- Writing room: timed (reading period, countdown, auto-submit at zero, spell check off) and untimed; autosave every 5 seconds with a sequence number so an older save never overwrites a newer one; only the saved draft counts after time is up.
+- Scoring through the same pipeline: a practice essay is a `submission` with `context = practice`, scored by the same per-row call, quote check and flags. The student's own name is redacted before scoring.
+- Results with "practice estimate" labels, quotes from the student's essay, one next step per row, and "We are not sure about this one" on low-confidence rows.
+- Teacher side: class code and "joined" count on the class page, a Joined pill per roster row.
+
+### Not yet, and why it matters
+
+- **No moderation yet (P2).** An essay that discloses self-harm or abuse is scored like any other. Do not open practice to real students before P2.
+- **No "Ask why", explainers or revisions (P2).**
+- **No handwritten practice (P3).**
+- **Practice prompts live in code**, versioned like rubrics. A `practice_prompt` table comes when teachers or districts write prompts.

@@ -21,6 +21,13 @@ Nothing here is resolved. Each item needs a decision or a signature before launc
 - [x] mupdf (AGPL-3.0) removed in favor of unpdf (MIT) and @napi-rs/canvas (MIT).
 - [ ] Review the full dependency license list before launch (`npx license-checker --summary`).
 
+## Student accounts (practice)
+
+- [ ] Privacy policy and terms must cover student accounts: students sign in with their own Google account, so their name and school email are stored. Numbered rosters keep names out of the roster, not out of student accounts.
+- [ ] Data agreement template must cover practice essays written by students (not only essays uploaded by teachers).
+- [ ] Safety flow for essays that disclose self-harm, abuse or threats (practice P2), reviewed by a counselor or child-safety advisor before any real student uses practice.
+- [ ] Every practice prompt reviewed by an AP teacher, and every DBQ excerpt checked against an archive copy, before students see it.
+
 ## Integrations (later milestones)
 
 - [ ] Google OAuth app verification for production (sensitive scopes come with Classroom in M5).
