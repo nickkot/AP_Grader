@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { Badge, Kbd, StatusBadge, StatusDot } from "@/components/ui/badge";
+import { Badge, Kbd, Pill, StatusBadge, StatusDot } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/misc";
@@ -106,11 +106,19 @@ export function ReviewView({
   const [tab, setTab] = useState("essay");
   const essayRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLOListElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
 
-  // Bring the active row into view, so a flagged row further down is not missed.
+  // Bring the active row into view inside the score panel only, so a flagged row
+  // further down is not missed and the page itself never jumps.
   useEffect(() => {
-    const el = listRef.current?.querySelector('[aria-current="true"]');
-    el?.scrollIntoView({ block: "nearest" });
+    const panel = asideRef.current;
+    const el = listRef.current?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!panel || !el || panel.scrollHeight <= panel.clientHeight) return;
+    const p = panel.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const header = 72;
+    if (r.top < p.top + header) panel.scrollTop -= p.top + header - r.top;
+    else if (r.bottom > p.bottom) panel.scrollTop += r.bottom - p.bottom + 8;
   }, [active]);
 
   const total = ordered.reduce((s, x) => s + (x.row.points ?? 0), 0);
@@ -194,7 +202,7 @@ export function ReviewView({
           .filter((p) => p.status === "transcribed")
           .map((p) => (
             <section key={p.id} aria-label={`Page ${p.pageNumber}`}>
-              <h3 className="mb-2 text-xs font-semibold text-muted-foreground">Page {p.pageNumber}</h3>
+              <h3 className="mb-2 text-xs font-bold tracking-wide text-muted-foreground uppercase">Page {p.pageNumber}</h3>
               <EssayText paragraphs={p.text} quotes={activeQuotes} activeQuote={activeQuote} />
             </section>
           ))}
@@ -204,7 +212,7 @@ export function ReviewView({
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_460px]">
       {/* Essay */}
-      <div ref={essayRef} className="order-2 min-w-0 lg:order-1">
+      <div ref={essayRef} className="order-2 min-w-0 rounded-card border border-border bg-surface p-4 shadow-low sm:p-6 lg:order-1">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="essay">{submission.inputKind === "typed" ? "Essay" : "Transcription"}</TabsTrigger>
@@ -216,7 +224,7 @@ export function ReviewView({
           <TabsContent value="pages" className="flex max-w-[720px] flex-col gap-4 pt-4">
             {pages.map((p) => (
               <figure key={p.id} className="flex flex-col gap-1">
-                <figcaption className="text-xs font-semibold text-muted-foreground">Page {p.pageNumber}</figcaption>
+                <figcaption className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Page {p.pageNumber}</figcaption>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.photoUrl} alt={`Photo of page ${p.pageNumber}`} className="w-full rounded-panel border border-border" />
               </figure>
@@ -226,15 +234,19 @@ export function ReviewView({
       </div>
 
       {/* Scores */}
-      <aside className="order-1 flex flex-col gap-3 lg:sticky lg:top-16 lg:order-2 lg:max-h-[calc(100vh-5rem)] lg:self-start lg:overflow-y-auto">
-        <div className="flex items-center gap-3">
-          <p className="text-lg font-semibold tabular-nums">
-            {total} of {rubric.maxPoints}
+      <aside
+        ref={asideRef}
+        className="order-1 flex flex-col gap-3 lg:sticky lg:top-6 lg:order-2 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto"
+      >
+        <div className="sticky top-0 z-10 flex items-center gap-3 bg-canvas pb-2">
+          <p className="text-2xl font-bold tabular-nums">
+            {total}
+            <span className="text-lg text-muted-foreground"> of {rubric.maxPoints}</span>
           </p>
           {approved ? <StatusBadge tone="ok">Approved</StatusBadge> : <StatusBadge tone="review">Not approved</StatusBadge>}
           <div className="ml-auto flex items-center gap-2">
             {approved ? (
-              <Button variant="outline" size="sm" onClick={() => run(() => unapproveSubmission(submission.id))} disabled={pending}>
+              <Button variant="outline" onClick={() => run(() => unapproveSubmission(submission.id))} disabled={pending}>
                 Unapprove
               </Button>
             ) : (
@@ -266,21 +278,29 @@ export function ReviewView({
           </div>
         </div>
 
-        <ol ref={listRef} className="flex flex-col divide-y divide-border rounded-panel border border-border bg-surface">
+        <ol ref={listRef} className="flex flex-col gap-3">
           {ordered.map(({ def, row }, i) => {
             const isActive = i === active;
             const flags = row.reviewStatus === "pending" ? row.flags : [];
             return (
               <li
                 key={row.id}
-                className={cn("flex flex-col gap-2 px-4 py-3", isActive && "bg-surface-muted")}
+                className={cn(
+                  "flex flex-col gap-3 rounded-card border bg-surface p-4 shadow-low transition-colors duration-100",
+                  isActive ? "border-primary" : "border-border",
+                )}
                 onClick={() => setActive(i)}
                 aria-current={isActive ? "true" : undefined}
               >
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{def.label}</p>
-                    <div className="mt-1 flex flex-wrap gap-1.5">
+                    <p className="text-base font-bold">{def.label}</p>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {row.points !== null && (
+                        <Pill tone={row.points >= def.maxPoints ? "ok" : row.points > 0 ? "progress" : "neutral"}>
+                          {def.maxPoints === 1 ? (row.points === 1 ? "Earned" : "Not earned") : `${row.points} of ${def.maxPoints}`}
+                        </Pill>
+                      )}
                       {flags.map((f) => (
                         <StatusBadge key={f} tone={f === "failed" ? "error" : "review"}>
                           {FLAG_LABEL[f] ?? f}
@@ -290,7 +310,7 @@ export function ReviewView({
                       {row.reviewStatus === "accepted" && <Badge>Accepted</Badge>}
                     </div>
                   </div>
-                  <div role="group" aria-label={`${def.label} points`} className="flex shrink-0 overflow-hidden rounded-control border border-input">
+                  <div role="group" aria-label={`${def.label} points`} className="flex shrink-0 overflow-hidden rounded-control border border-input bg-surface">
                     {Array.from({ length: def.maxPoints + 1 }, (_, p) => (
                       <button
                         key={p}
@@ -303,8 +323,8 @@ export function ReviewView({
                           setPoints(row, p);
                         }}
                         className={cn(
-                          "h-8 min-w-8 border-l border-input px-2 text-sm tabular-nums first:border-l-0 disabled:cursor-default",
-                          row.points === p ? "bg-primary font-semibold text-primary-foreground" : "bg-surface hover:bg-surface-muted",
+                          "h-10 min-w-10 cursor-pointer border-l border-input px-2 text-base font-bold tabular-nums first:border-l-0 disabled:cursor-default",
+                          row.points === p ? "bg-primary text-primary-foreground" : "bg-surface text-foreground hover:bg-primary-soft",
                         )}
                       >
                         {p}
@@ -314,7 +334,7 @@ export function ReviewView({
                 </div>
 
                 {row.error ? (
-                  <p className="text-sm text-status-error">{row.error}</p>
+                  <p className="text-sm text-critical">{row.error}</p>
                 ) : (
                   <p className="text-sm text-muted-foreground">{row.justification}</p>
                 )}
@@ -343,7 +363,7 @@ export function ReviewView({
                 )}
 
                 <div className="flex flex-col gap-1">
-                  <p className="text-xs font-semibold text-muted-foreground">Comment for the student</p>
+                  <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Comment for the student</p>
                   {editing === row.id ? (
                     <FeedbackEditor
                       initial={row.studentFeedback}
@@ -352,10 +372,10 @@ export function ReviewView({
                     />
                   ) : (
                     <div className="flex items-start gap-2">
-                      <p className="flex-1 text-sm">{row.studentFeedback || <span className="text-muted-foreground">No comment</span>}</p>
+                      <p className="flex-1 text-base">{row.studentFeedback || <span className="text-muted-foreground">No comment</span>}</p>
                       {!approved && (
                         <Button
-                          variant="link"
+                          variant="tertiary"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();

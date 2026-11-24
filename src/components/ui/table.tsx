@@ -4,25 +4,32 @@ import { cn } from "@/lib/utils";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto rounded-panel border border-border bg-surface">
+    <div
+      data-slot="table-container"
+      className="relative w-full overflow-x-auto rounded-card border border-border bg-surface shadow-low"
+    >
       <table data-slot="table" className={cn("w-full caption-bottom border-collapse text-sm", className)} {...props} />
     </div>
   );
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
-  return <thead data-slot="table-header" className={cn("sticky top-0 z-10 bg-surface-muted", className)} {...props} />;
+  return <thead data-slot="table-header" className={cn("sticky top-0 z-10 bg-surface", className)} {...props} />;
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   return <tbody data-slot="table-body" className={cn(className)} {...props} />;
 }
 
+function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
+  return <tfoot data-slot="table-footer" className={cn("border-t border-border bg-canvas", className)} {...props} />;
+}
+
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
       data-slot="table-row"
-      className={cn("border-b border-border last:border-0 data-[state=selected]:bg-surface-muted", className)}
+      className={cn("border-b border-border last:border-0 data-[state=selected]:bg-primary-soft", className)}
       {...props}
     />
   );
@@ -33,7 +40,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-9 whitespace-nowrap border-b border-border px-3 text-left align-middle text-xs font-semibold text-muted-foreground",
+        "h-11 border-b border-border px-4 text-left align-middle text-xs font-bold whitespace-nowrap text-muted-foreground",
         className,
       )}
       {...props}
@@ -42,7 +49,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
-  return <td data-slot="table-cell" className={cn("h-10 px-3 align-middle", className)} {...props} />;
+  return <td data-slot="table-cell" className={cn("h-11 px-4 align-middle", className)} {...props} />;
 }
 
-export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell };
+export { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell };

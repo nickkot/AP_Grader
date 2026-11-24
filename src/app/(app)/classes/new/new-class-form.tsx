@@ -11,7 +11,7 @@ export function NewClassForm() {
   const err = state?.fieldErrors ?? {};
 
   return (
-    <form action={action} className="flex flex-col gap-5">
+    <form action={action} className="flex flex-col gap-6 rounded-card border border-border bg-surface p-4 shadow-low sm:p-6">
       <Field>
         <Label htmlFor="course">Course</Label>
         <NativeSelect id="course" name="course" defaultValue="APUSH">

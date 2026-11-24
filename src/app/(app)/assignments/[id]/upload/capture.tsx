@@ -250,7 +250,7 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
             <CameraIcon aria-hidden />
             Open camera
           </Button>
-          {cameraError && <p className="text-sm text-status-error">{cameraError}</p>}
+          {cameraError && <p className="text-sm text-critical">{cameraError}</p>}
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
               <label>
@@ -265,7 +265,7 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
               </label>
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Lay each page flat in good light with the QR code in view. Take one photo per page.
           </p>
           {pdfState && <p className="text-sm">{pdfState}</p>}
@@ -273,7 +273,7 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
       )}
 
       {progress && progress.total > 0 && (
-        <div className="flex flex-col gap-2 rounded-panel border border-border bg-surface px-4 py-3 text-sm">
+        <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 text-base shadow-low sm:p-6">
           <p>
             {progress.done} of {progress.total} pages read
             {progress.unmatched > 0 && <span>. {pluralize(progress.unmatched, "page")} need matching</span>}
@@ -294,7 +294,7 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
           )}
         </div>
       )}
-      {progress?.batchError && <p className="text-sm text-status-error">{progress.batchError}</p>}
+      {progress?.batchError && <p className="text-sm text-critical">{progress.batchError}</p>}
 
       {failed.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -325,7 +325,7 @@ export function Capture({ assignmentId }: { assignmentId: string }) {
         <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6" aria-label="Photos taken">
           {shots.map((s) =>
             s.preview ? (
-              <li key={s.id} className="relative overflow-hidden rounded-control border border-border">
+              <li key={s.id} className="relative overflow-hidden rounded-control border border-border bg-surface shadow-low">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={s.preview} alt="" className="aspect-[3/4] w-full object-cover" />
                 <span className="absolute right-1 bottom-1 rounded-full bg-surface p-0.5">

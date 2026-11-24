@@ -44,7 +44,7 @@ export function AssignmentForm({ classId, essayTypes }: { classId: string; essay
   );
 
   return (
-    <form action={action} className="flex flex-col gap-5">
+    <form action={action} className="flex flex-col gap-6 rounded-card border border-border bg-surface p-4 shadow-low sm:p-6">
       <input type="hidden" name="classId" value={classId} />
       <input type="hidden" name="sources" value={sourcesJson} />
 
@@ -75,12 +75,12 @@ export function AssignmentForm({ classId, essayTypes }: { classId: string; essay
 
       {type.usesSources && (
         <fieldset className="flex flex-col gap-3">
-          <legend className="text-sm font-semibold">Documents</legend>
+          <legend className="text-base font-bold">Documents</legend>
           <FieldHint>Numbered in this order on the packet and in scoring.</FieldHint>
           {docs.map((d, i) => (
-            <div key={d.key} className="flex flex-col gap-2 rounded-panel border border-border p-3">
+            <div key={d.key} className="flex flex-col gap-2 rounded-control border border-border bg-canvas p-3 sm:p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">Document {i + 1}</span>
+                <span className="text-base font-bold">Document {i + 1}</span>
                 <div className="flex items-center gap-1">
                   <Tooltip content="Move up">
                     <Button type="button" variant="ghost" size="icon" aria-label={`Move document ${i + 1} up`} onClick={() => move(i, -1)} disabled={i === 0}>

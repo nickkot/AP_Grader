@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldError, Label, Textarea } from "@/components/ui/input";
 import { addStudents } from "@/lib/actions/classes";
 
-export function AddStudentsDialog({ classId }: { classId: string }) {
+export function AddStudentsDialog({ classId, primary = false }: { classId: string; primary?: boolean }) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(async (prev: Awaited<ReturnType<typeof addStudents>>, form: FormData) => {
     const result = await addStudents(classId, prev, form);
@@ -18,7 +18,7 @@ export function AddStudentsDialog({ classId }: { classId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant={primary ? "default" : "outline"} size={primary ? "default" : "sm"}>
           Add students
         </Button>
       </DialogTrigger>

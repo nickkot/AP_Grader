@@ -1,5 +1,29 @@
 # Changelog
 
+## Learning-product design (2026-11-24)
+
+New design based on patterns from Khan Academy's open-source design system (Wonder Blocks, MIT). It copies the structure only, never the brand: no Khan Academy name, logo, signature colors or characters. Full rationale in `docs/DESIGN.md`. The `design-system` skill is updated to match.
+
+**Changed**
+- Lato for UI text (self-hosted), 16 px body text, type scale up to 28 px.
+- Off-white canvas with white cards, soft shadows, 12 px card radius, double focus ring.
+- Our own deep blue accent, and green, amber and red status colors, each with a soft tint for pills and banners.
+- Left sidebar with classes grouped by course and assignments nested, with a slide-out menu on phones.
+- Up next card on class and assignment pages, holding the one primary action.
+- Assignment page: mastery grid (green earned, light green partly earned, gray not earned, amber ring for review), legend, per-row "earned the point" footer, and a segmented class progress bar.
+- Classes page: course sections with class cards and progress bars. Class page: stat tiles and assignment cards.
+- Review: each rubric row is a card with an outcome pill and larger points buttons. The total and Approve stay pinned while the score panel scrolls.
+- Transcription check: an info banner with the confirm action. Forms, upload, match and sign-in sit in cards.
+
+**Fixed during visual QA**
+- The review screen scrolled the whole page to the flagged row, hiding the total and the Approve button. Now only the score panel scrolls.
+- Duplicate "Create class" cards in every course section, replaced by one button.
+- Secondary actions came before the Up next card on phones. They now come after it.
+- Dashed outlines on unscored cells were noisy across a 32-student grid. They now use a quiet solid outline.
+- A dark-mode cell color fell under 4.5:1 contrast. Every token pair was checked, and all pass WCAG AA.
+
+**Checks:** typecheck, lint, copy lint, 111 unit and integration tests, the end-to-end teacher flow, and screenshots of 12 routes at laptop and phone widths in light and dark mode. No horizontal page scroll; no serious or critical axe issues.
+
 ## MVP: handwritten loop (2026-11-24)
 
 First working version, for APUSH DBQ and AP Lang Argument.

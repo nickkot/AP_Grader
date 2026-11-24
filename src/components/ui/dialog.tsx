@@ -17,10 +17,10 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-32px)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-panel border border-border bg-surface p-6 shadow-lg",
+          "fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-32px)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-card border border-border bg-surface p-6 shadow-high",
           className,
         )}
         {...props}
@@ -46,7 +46,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
-  return <DialogPrimitive.Title className={cn("text-lg font-semibold", className)} {...props} />;
+  return <DialogPrimitive.Title className={cn("text-lg font-bold", className)} {...props} />;
 }
 
 function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
@@ -64,7 +64,7 @@ function SheetContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-lg flex-col gap-4 overflow-y-auto border-l border-border bg-surface p-6 shadow-lg",
+          "fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-lg flex-col gap-4 overflow-y-auto border-l border-border bg-surface p-6 shadow-high",
           className,
         )}
         {...props}

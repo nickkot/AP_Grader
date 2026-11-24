@@ -35,8 +35,8 @@ export function TypedEntry({
   }
 
   return (
-    <div className="flex max-w-[720px] flex-col gap-4">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex max-w-[760px] flex-col gap-4 rounded-card border border-border bg-surface p-4 shadow-low sm:p-6">
+      <p className="text-base text-muted-foreground">
         No pages yet for this student.{" "}
         <Link href={uploadHref} className="text-primary underline underline-offset-2">
           Upload photos

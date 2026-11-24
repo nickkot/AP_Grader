@@ -20,7 +20,7 @@ export function MatchRow({
   const [pending, start] = useTransition();
 
   return (
-    <div className="grid gap-4 rounded-panel border border-border bg-surface p-4 sm:grid-cols-[240px_1fr]">
+    <div className="grid gap-4 rounded-card border border-border bg-surface p-4 shadow-low sm:grid-cols-[240px_1fr] sm:p-6">
       <a href={page.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-control border border-border">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={page.url} alt="Unmatched page" className="aspect-[3/4] w-full object-cover object-top" />
@@ -58,7 +58,7 @@ export function MatchRow({
           <Button type="submit" disabled={pending}>
             Match page
           </Button>
-          <Button type="button" variant="ghost" disabled={pending} onClick={() => start(() => discardPage(assignmentId, page.id))}>
+          <Button type="button" variant="tertiary" disabled={pending} onClick={() => start(() => discardPage(assignmentId, page.id))}>
             Discard
           </Button>
         </div>

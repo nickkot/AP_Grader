@@ -46,12 +46,12 @@ export function SignInForm({ google, devLogin, next }: { google: boolean; devLog
           Sign in with Google
         </Button>
       ) : (
-        !devLogin && <p className="text-sm text-status-error">Google sign-in is not set up for this site yet.</p>
+        !devLogin && <p className="text-sm text-critical">Google sign-in is not set up for this site yet.</p>
       )}
 
       {devLogin && (
-        <form action={devSignIn} className="flex flex-col gap-4 rounded-panel border border-border p-4">
-          <p className="text-xs font-semibold text-muted-foreground">Development sign-in</p>
+        <form action={devSignIn} className="flex flex-col gap-4 rounded-control border border-dashed border-input p-4">
+          <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Development sign-in</p>
           <Field>
             <Label htmlFor="name">Name</Label>
             <Input id="name" name="name" autoComplete="name" />

@@ -39,11 +39,11 @@ async function signedInState(): Promise<string> {
 async function discoverRoutes(ctx: BrowserContext): Promise<Record<string, string>> {
   const page = await ctx.newPage();
   await page.goto(`${BASE}/classes`);
-  const classHref = await page.locator('table a[href^="/classes/"]').first().getAttribute("href");
+  const classHref = await page.locator('main a[href^="/classes/"]:not([href="/classes/new"])').first().getAttribute("href");
   await page.goto(`${BASE}${classHref}`);
-  const assignmentHref = await page.locator('table a[href^="/assignments/"]').first().getAttribute("href");
+  const assignmentHref = await page.locator('main a[href^="/assignments/"]:not([href^="/assignments/new"])').first().getAttribute("href");
   await page.goto(`${BASE}${assignmentHref}`);
-  const studentLinks = await page.locator('a[href*="/students/"]').evaluateAll((els) =>
+  const studentLinks = await page.locator('main a[href*="/students/"]').evaluateAll((els) =>
     els.map((e) => ({ href: (e as HTMLAnchorElement).getAttribute("href")!, row: e.closest("tr")?.textContent ?? "" })),
   );
   const find = (label: string) => studentLinks.find((l) => l.row.includes(label))?.href;

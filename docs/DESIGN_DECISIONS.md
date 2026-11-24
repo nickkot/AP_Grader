@@ -1,11 +1,14 @@
 # Design decisions
 
-Cases the design system does not cover, decided the boring way.
+Cases the design system does not cover, decided the boring way. The system itself: `docs/DESIGN.md`.
 
-- **Unmatched pages banner:** neutral surface with an amber dot, not an amber fill, because status colors never fill large areas.
-- **Points control:** a segmented row of number buttons (0 to max) per rubric row. The selected value uses the accent color because it is the teacher's current choice, not a status.
-- **Review layout:** essay on the left (720 px reading column), scores on the right (460 px, sticky). On phones the scores come first so a quick check needs no scrolling.
-- **Evidence highlight:** a pale yellow mark, stronger for the quote just clicked. Yellow is not a status color in this app, so it cannot be mistaken for "needs review".
-- **Low-confidence words:** amber underline with a pale amber background, per "AI confidence uses the amber and neutral scale".
-- **Camera screen:** full-screen black with a round white shutter, the one place the app departs from the gray surfaces, because it is a camera.
+- **Mastery cells for rubric rows:** Khan Academy's progress states (not started, attempted, complete) mapped to rubric outcomes: green for full points, light green for partial, gray for zero, quiet outline for not scored. Zero is gray, not red, because a missed point is a learning step, not an error.
+- **Needs review on a cell:** an amber ring around the cell, so it works with any fill. Amber always means "teacher attention".
+- **Unmatched pages:** a warning banner (tinted background, amber left border, icon), the one pattern for things to deal with now.
+- **Points control:** a segmented row of 40 px number buttons per rubric row. The selected value uses the accent because it is the teacher's choice, not a status.
+- **Review layout:** essay card on the left (reading column), score cards on the right with the total and Approve pinned at the top. On phones the scores come first.
+- **Up next card:** the only place with a tinted accent background, so the next step is easy to find.
+- **Evidence highlight:** a pale yellow mark, stronger for the quote just clicked. Yellow is not a status color here.
+- **Camera screen:** full-screen black with a round white shutter, the one place the app departs from the canvas, because it is a camera.
 - **Keyboard hints:** shown under the review panel on laptops, hidden on phones.
+- **Secondary actions on phones:** shown after the Up next card, so the main action is the first thing on screen.
