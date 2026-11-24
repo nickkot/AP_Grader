@@ -12,18 +12,21 @@ import {
   assignments,
   classes,
   pages,
+  practiceAttempts,
   qrTokens,
   rowScores,
   scoreRuns,
   students,
   submissions,
   uploadBatches,
+  user,
   type Evidence,
 } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { enqueue } from "@/lib/jobs";
 import { blankTopFallback, processPagePhoto, splitPdfToImages } from "@/lib/pipeline/images";
-import { COURSES, ESSAY_TYPES, getRubric } from "@/lib/rubrics";
+import { practicePrompt } from "@/lib/practice/prompts";
+import { COURSES, ESSAY_TYPES, getRubric, rubricForEssayType } from "@/lib/rubrics";
 import { getObject, putObject } from "@/lib/storage";
 
 const log = (msg: string, extra: Record<string, unknown> = {}) =>
@@ -247,19 +250,64 @@ export async function splitPdfBatch(batchId: string): Promise<void> {
 
 export const LOW_CONFIDENCE_FLAG = 0.7;
 
-export async function scoreSubmission(submissionId: string): Promise<void> {
-  const sub = await db.query.submissions.findFirst({ where: eq(submissions.id, submissionId) });
-  // Only run when a teacher has sent it to scoring. A cancel moves it back first.
-  if (!sub || sub.status !== "scoring") return;
+/**
+ * What a submission is scored against. A teacher assignment brings its prompt, documents,
+ * rubric version and class roster (for redaction). A practice essay brings its practice
+ * prompt and the current rubric, and its only name to redact is the student's own.
+ */
+async function scoringTarget(sub: typeof submissions.$inferSelect) {
+  if (sub.context === "practice") {
+    if (!sub.practiceAttemptId) return null;
+    const attempt = await db.query.practiceAttempts.findFirst({ where: eq(practiceAttempts.id, sub.practiceAttemptId) });
+    const prompt = attempt ? practicePrompt(attempt.promptKey) : undefined;
+    if (!attempt || !prompt) return null;
+    const writer = await db.query.user.findFirst({ where: eq(user.id, attempt.userId) });
+    const [firstName = "", ...rest] = (writer?.name ?? "").trim().split(/\s+/);
+    const author = { firstName, lastName: rest.join(" ") };
+    const rubric = rubricForEssayType(prompt.essayType);
+    return {
+      assignmentId: null,
+      essayType: prompt.essayType,
+      rubricKey: rubric.key,
+      rubricVersion: rubric.version,
+      promptText: prompt.promptText,
+      sources: prompt.sources,
+      courseLabel: null,
+      author,
+      roster: [author],
+    };
+  }
 
+  if (!sub.assignmentId) return null;
   const assignment = await db.query.assignments.findFirst({ where: eq(assignments.id, sub.assignmentId) });
-  if (!assignment) return;
-  const author = await db.query.students.findFirst({ where: eq(students.id, sub.studentId) });
+  if (!assignment) return null;
+  const author = sub.studentId ? await db.query.students.findFirst({ where: eq(students.id, sub.studentId) }) : undefined;
   const roster = await db
     .select({ firstName: students.firstName, lastName: students.lastName })
     .from(students)
     .where(eq(students.classId, assignment.classId));
   const cls = await db.query.classes.findFirst({ where: eq(classes.id, assignment.classId) });
+  return {
+    assignmentId: assignment.id,
+    essayType: assignment.essayType,
+    rubricKey: assignment.rubricKey,
+    rubricVersion: assignment.rubricVersion,
+    promptText: assignment.promptText,
+    sources: assignment.sources,
+    courseLabel: cls ? COURSES[cls.course].label : null,
+    author: author ?? null,
+    roster,
+  };
+}
+
+export async function scoreSubmission(submissionId: string): Promise<void> {
+  const sub = await db.query.submissions.findFirst({ where: eq(submissions.id, submissionId) });
+  // Only run when a teacher has sent it to scoring. A cancel moves it back first.
+  if (!sub || sub.status !== "scoring") return;
+
+  const target = await scoringTarget(sub);
+  if (!target) return;
+  const { author, roster } = target;
 
   // Build the essay text, redacted page by page so page boundaries stay known.
   let essayPages: { id: string; pageNumber: number; text: string }[];
@@ -283,14 +331,14 @@ export async function scoreSubmission(submissionId: string): Promise<void> {
     return;
   }
 
-  const rubric = getRubric(assignment.rubricKey, assignment.rubricVersion);
-  const essayType = ESSAY_TYPES[assignment.essayType];
+  const rubric = getRubric(target.rubricKey, target.rubricVersion);
+  const essayType = ESSAY_TYPES[target.essayType];
   const ctx: ScoringContext = {
     rubric,
-    courseLabel: cls ? COURSES[cls.course].label : COURSES[essayType.course].label,
+    courseLabel: target.courseLabel ?? COURSES[essayType.course].label,
     essayTypeLabel: essayType.label,
-    promptText: assignment.promptText,
-    sources: assignment.sources,
+    promptText: target.promptText,
+    sources: target.sources,
     essayText,
     handwritten: sub.inputKind === "handwritten",
   };
@@ -308,7 +356,9 @@ export async function scoreSubmission(submissionId: string): Promise<void> {
     })
     .returning();
 
-  await db.update(assignments).set({ lockedAt: new Date() }).where(and(eq(assignments.id, assignment.id), isNull(assignments.lockedAt)));
+  if (target.assignmentId) {
+    await db.update(assignments).set({ lockedAt: new Date() }).where(and(eq(assignments.id, target.assignmentId), isNull(assignments.lockedAt)));
+  }
 
   // Score the first row alone so it writes the prompt cache, then the rest in parallel reading from it.
   const [firstRow, ...otherRows] = rubric.rows;

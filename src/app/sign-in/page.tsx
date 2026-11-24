@@ -5,14 +5,16 @@ import { SignInForm } from "@/app/sign-in/sign-in-form";
 import { googleSignInEnabled } from "@/lib/auth";
 import { APP_NAME } from "@/lib/brand";
 import { env } from "@/lib/env";
-import { getTeacher } from "@/lib/session";
+import { getSessionUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Sign in" };
 
 export default async function SignInPage(props: PageProps<"/sign-in">) {
-  if (await getTeacher()) redirect("/classes");
   const params = await props.searchParams;
-  const next = typeof params.next === "string" && params.next.startsWith("/") ? params.next : "/classes";
+  // Only same-site paths: "//host" would send the browser to another site.
+  const next = typeof params.next === "string" && /^\/(?!\/)/.test(params.next) ? params.next : "/classes";
+  const signedIn = await getSessionUser();
+  if (signedIn) redirect(signedIn.kind === "student" && next === "/classes" ? "/practice" : next);
 
   return (
     <main className="flex flex-1 items-start justify-center px-4 pt-16 sm:pt-28">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { eq } from "drizzle-orm";
 
 import { AddStudentsDialog } from "@/app/(app)/classes/[classId]/add-students-dialog";
 import { ReplaceNamesDialog } from "@/app/(app)/classes/[classId]/replace-names-dialog";
@@ -10,6 +11,10 @@ import { LinkCard, StatTile, UpNext } from "@/components/ui/card";
 import { ProgressLegend, SegmentedProgress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getClassForTeacher, rosterFor, rosterLabel } from "@/lib/data";
+import { db } from "@/lib/db";
+import { classMemberships } from "@/lib/db/schema";
+import { env } from "@/lib/env";
+import { ensureJoinCode } from "@/lib/join";
 import { assignmentsForClass, countsByAssignment, segmentsFor } from "@/lib/progress";
 import { COURSES, ESSAY_TYPES } from "@/lib/rubrics";
 import { requireTeacher } from "@/lib/session";
@@ -22,6 +27,14 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
   const { classId } = await props.params;
   const cls = await getClassForTeacher(classId, teacher.id);
   const roster = await rosterFor(cls.id);
+  const joinCode = await ensureJoinCode(cls.id);
+  const joined = new Set(
+    (await db.select({ studentId: classMemberships.studentId }).from(classMemberships).where(eq(classMemberships.classId, cls.id))).map(
+      (m) => m.studentId,
+    ),
+  );
+  const joinedCount = roster.filter((s) => joined.has(s.id)).length;
+  const joinHost = new URL(env().APP_URL).host;
   const list = await assignmentsForClass(cls.id);
   const counts = await countsByAssignment(list.map((a) => a.id));
 
@@ -151,6 +164,12 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
         {numbered && roster.length > 0 && (
           <p className="text-sm text-muted-foreground">Students are listed by number. No names are stored in this class.</p>
         )}
+        {roster.length > 0 && (
+          <p className="text-sm text-muted-foreground">
+            Students join for practice at {joinHost}/join with code{" "}
+            <span className="font-mono font-bold tracking-widest text-foreground">{joinCode}</span>. {joinedCount} of {roster.length} joined.
+          </p>
+        )}
         {roster.length === 0 ? (
           <EmptyState>No students yet.</EmptyState>
         ) : (
@@ -165,6 +184,11 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
                 <TableRow key={s.id}>
                   <TableCell className="max-w-0 truncate text-base" title={rosterLabel(s)}>
                     {rosterLabel(s)}
+                    {joined.has(s.id) && (
+                      <Pill tone="ok" className="ml-2 align-middle">
+                        Joined
+                      </Pill>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

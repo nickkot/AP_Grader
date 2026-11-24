@@ -72,6 +72,22 @@ The first build is a smaller MVP than milestones 1 to 3 in `docs/PLAN.md`: the h
 | Export has a "Student number" column for numbered classes | Matches the teacher's key and gradebook without names |
 | Page photos taken before a switch keep the printed names | Rewriting stored photos is out of scope. The dialog says so |
 
+## Student practice, P1 (2026-11-24)
+
+| Decision | Why |
+| --- | --- |
+| `user.kind` is `teacher` or `student`; teacher pages and actions refuse students, practice pages refuse teachers | One account table for Better Auth, one check in `requireTeacher` and `requireStudent` |
+| A new account becomes a student when it joins a class. An account that owns classes cannot join | No separate student sign-up. Teachers cannot end up in practice by mistake |
+| Students join with the class code, then their name or number. The roster is never shown | A code alone reveals no names of minors. 10 failed tries per hour stops guessing |
+| Practice essays are `submission` rows with `context = practice` and no assignment | One scoring pipeline, as the plan requires. Teacher queries always filter by assignment, and `getSubmissionForTeacher` refuses practice rows |
+| Practice prompts are code, versioned like rubrics | No authoring UI yet. A table comes when teachers or districts write prompts |
+| The draft lives on the attempt, with a sequence number | One current draft is all P1 needs. A conditional update makes an older save a no-op |
+| After the deadline plus 60 seconds, only the last saved draft is scored | Students cannot keep typing after time is up. The grace covers a slow network at zero |
+| Students see practice scores right away, labeled "practice estimate" | The practice spec asks for results in under a minute. Teacher approval still gates every assignment score |
+| 10 scored practice essays per student per day | Bounds cost until per-plan limits (P8) |
+| Google sign-in rate limit raised to 300 per minute per IP | Better Auth allows 3 sign-ins per 10 seconds per IP. A class signing in together shares one school IP |
+| Sign-in `next` must be a same-site path | `//host` was accepted and would send people to another site after sign-in |
+
 ## Known limits
 
 - Copier PDFs saved as JPEG 2000 will not render (the bundled pdf.js has no JPX decoder). Ordinary JPEG and JBIG2 scans work.

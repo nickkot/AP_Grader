@@ -173,6 +173,17 @@ export default async function HowItWorksPage() {
       </section>
 
       <section className="flex flex-col gap-4">
+        <SectionTitle>Student practice</SectionTitle>
+        <Card>
+          <CardContent className="flex flex-col gap-2">
+            <p className="text-base">Students can write practice essays on their own and see row scores in about a minute.</p>
+            <p className="text-base">They join at /join with the class code under your roster, then type their name or number.</p>
+            <p className="text-base">Practice scores are labeled as practice estimates. They never reach your gradebook.</p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="flex flex-col gap-4">
         <SectionTitle>Typed essays</SectionTitle>
         <Card>
           <CardContent className="flex flex-col gap-2">

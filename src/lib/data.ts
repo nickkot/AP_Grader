@@ -43,9 +43,10 @@ export async function getStudentForTeacher(studentId: string, teacherId: string)
 export async function getSubmissionForTeacher(submissionId: string, teacherId: string) {
   if (!isUuid(submissionId)) notFound();
   const sub = await db.query.submissions.findFirst({ where: eq(submissions.id, submissionId) });
-  if (!sub) notFound();
+  // Practice essays belong to the student who wrote them, never to a teacher's review screens.
+  if (!sub || sub.context !== "assignment" || !sub.assignmentId || !sub.studentId) notFound();
   await getAssignmentForTeacher(sub.assignmentId, teacherId);
-  return sub;
+  return { ...sub, assignmentId: sub.assignmentId, studentId: sub.studentId };
 }
 
 export async function rosterFor(classId: string) {

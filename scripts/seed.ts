@@ -28,12 +28,16 @@ import {
   type TranscriptLine,
 } from "@/lib/db/schema";
 import { DEMO_DBQ, DEMO_DBQ_ESSAYS, DEMO_LANG, DEMO_LANG_ESSAYS, DEMO_ROSTER, type DemoEssay } from "@/lib/demo/content";
+import { drainInlineJobs } from "@/lib/jobs";
+import { claimSeat, ensureJoinCode } from "@/lib/join";
 import { ensurePacketTokens } from "@/lib/packet/tokens";
+import { startAttempt, submitAttempt } from "@/lib/practice/attempts";
 import { ESSAY_TYPES, rubricForEssayType } from "@/lib/rubrics";
 import { putObject } from "@/lib/storage";
 
 const DEMO_EMAIL = "demo@example.com";
 const DEMO_PASSWORD = "demo-password";
+const STUDENT_EMAIL = "student@example.com";
 
 type ManifestEntry = { essayKey: string; pageNumber: number; pageCount: number; file: string; lines: string[]; text: string };
 
@@ -58,6 +62,8 @@ async function main() {
 
   // Fresh demo account every run. Delete the classes first: that removes their assignments, pages
   // and upload batches, which point at the user without a cascade and would block deleting the user.
+  const oldStudent = await db.query.user.findFirst({ where: eq(user.email, STUDENT_EMAIL) });
+  if (oldStudent) await db.delete(user).where(eq(user.id, oldStudent.id));
   const existing = await db.query.user.findFirst({ where: eq(user.email, DEMO_EMAIL) });
   if (existing) {
     await db.delete(classes).where(eq(classes.teacherId, existing.id));
@@ -215,7 +221,21 @@ async function main() {
     await seedScores(sub.id, essay, langRubric.key, langRubric.version, [{ id: "typed", pageNumber: 1, text: essay.text }], approved, teacher.id);
   }
 
+  // Demo student: joined Period 3 as Samuel Abebe, with one scored practice essay.
+  await getAuth().api.signUpEmail({ body: { email: STUDENT_EMAIL, password: DEMO_PASSWORD, name: "Samuel Abebe" } });
+  const demoStudent = await db.query.user.findFirst({ where: eq(user.email, STUDENT_EMAIL) });
+  if (!demoStudent) throw new Error("Could not create the demo student.");
+  await db.update(user).set({ kind: "student" }).where(eq(user.id, demoStudent.id));
+  await ensureJoinCode(apush.id);
+  const joinResult = await claimSeat(demoStudent.id, apush.id, { firstName: "Samuel", lastName: "Abebe" });
+  if ("error" in joinResult) throw new Error(`Demo student could not join: ${joinResult.error}`);
+  const started = await startAttempt(demoStudent.id, "lang-value-of-failure", "untimed", new Date(Date.now() - 50 * 60_000));
+  if ("error" in started) throw new Error(started.error);
+  await submitAttempt(demoStudent.id, started.attempt.id, DEMO_LANG_ESSAYS[1].text, false);
+  await drainInlineJobs();
+
   console.log(`Seeded demo data. Sign in with ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
+  console.log(`Demo student: ${STUDENT_EMAIL} / ${DEMO_PASSWORD}`);
   process.exit(0);
 }
 
