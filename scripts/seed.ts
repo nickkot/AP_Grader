@@ -56,8 +56,13 @@ function toTranscript(lines: string[], lowEvery: number): TranscriptLine[] {
 async function main() {
   if (process.env.NODE_ENV === "production") throw new Error("Do not seed demo data in production.");
 
-  // Fresh demo account every run.
-  await db.delete(user).where(eq(user.email, DEMO_EMAIL));
+  // Fresh demo account every run. Delete the classes first (which cascades to
+  // assignments, pages and scores) so no row still points at the teacher.
+  const existing = await db.query.user.findFirst({ where: eq(user.email, DEMO_EMAIL) });
+  if (existing) {
+    await db.delete(classes).where(eq(classes.teacherId, existing.id));
+    await db.delete(user).where(eq(user.id, existing.id));
+  }
   await getAuth().api.signUpEmail({ body: { email: DEMO_EMAIL, password: DEMO_PASSWORD, name: "Demo Teacher" } });
   const teacher = await db.query.user.findFirst({ where: eq(user.email, DEMO_EMAIL) });
   if (!teacher) throw new Error("Could not create the demo teacher. Is ENABLE_DEV_LOGIN=true?");
