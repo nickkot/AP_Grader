@@ -57,10 +57,15 @@ function createAuth() {
 }
 
 type Auth = ReturnType<typeof createAuth>;
-const globalForAuth = globalThis as unknown as { __auth?: Auth };
+const globalForAuth = globalThis as unknown as { __auth?: Auth; __authDb?: ReturnType<typeof getDb> };
 
+/** Shared Better Auth instance, rebuilt in development when the Drizzle client is (see getDb). */
 export function getAuth(): Auth {
-  if (!globalForAuth.__auth) globalForAuth.__auth = createAuth();
+  const db = getDb();
+  if (!globalForAuth.__auth || globalForAuth.__authDb !== db) {
+    globalForAuth.__auth = createAuth();
+    globalForAuth.__authDb = db;
+  }
   return globalForAuth.__auth;
 }
 
