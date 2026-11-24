@@ -14,7 +14,7 @@ This branch is the **MVP**: the handwritten loop for APUSH DBQ and AP Lang Argum
 
 Typed essays (paste, .docx, .pdf, .txt) work too.
 
-Plans: `docs/PLAN.md` (full product), `docs/STUDENT_PRACTICE_PLAN.md` (student side, awaiting approval). Decisions: `docs/DECISIONS.md`. Deployment: `docs/DEPLOY.md`.
+Design: `docs/DESIGN.md`. Plans: `docs/PLAN.md` (full product), `docs/STUDENT_PRACTICE_PLAN.md` (student side, awaiting approval). Decisions: `docs/DECISIONS.md`. Deployment: `docs/DEPLOY.md`.
 
 ## Run it locally
 

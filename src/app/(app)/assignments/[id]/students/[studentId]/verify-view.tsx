@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { StatusDot, Kbd } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
+import { Banner } from "@/components/ui/card";
 import { confirmAndScore, savePageText } from "@/lib/actions/review";
 import type { TranscriptLine } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
@@ -90,15 +91,15 @@ function PageEditor({ page }: { page: PageView }) {
   return (
     <section className="grid gap-4 lg:grid-cols-2" aria-label={`Page ${page.pageNumber}`}>
       <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">Page {page.pageNumber}</h2>
-        <a href={page.photoUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-panel border border-border bg-surface-muted">
+        <h2 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Page {page.pageNumber}</h2>
+        <a href={page.photoUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-card border border-border bg-surface-muted shadow-low">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={page.photoUrl} alt={`Photo of page ${page.pageNumber}`} className="w-full" />
         </a>
       </div>
       <div className="flex flex-col gap-2">
-        <div className="flex h-5 items-center justify-between">
-          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex min-h-8 items-center justify-between">
+          <span className="flex items-center gap-2 text-sm text-muted-foreground">
             {page.status === "failed" ? (
               <>
                 <StatusDot tone="error" /> {page.error}
@@ -112,7 +113,7 @@ function PageEditor({ page }: { page: PageView }) {
             )}
           </span>
           {page.status !== "failed" && !editing && (
-            <Button variant="link" size="sm" onClick={() => setEditing(true)}>
+            <Button variant="tertiary" size="sm" onClick={() => setEditing(true)}>
               Edit text
             </Button>
           )}
@@ -135,7 +136,7 @@ function PageEditor({ page }: { page: PageView }) {
             </div>
           </div>
         ) : (
-          <div className="rounded-panel border border-border bg-surface p-4">
+          <div className="rounded-card border border-border bg-surface p-4 shadow-low sm:p-6">
             <TranscriptLines lines={page.transcript} />
           </div>
         )}
@@ -180,18 +181,25 @@ export function VerifyView({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3 rounded-panel border border-border bg-surface px-4 py-3">
+      <Banner
+        tone="info"
+        action={
+          <span className="flex items-center gap-3">
+            <span className="hidden text-xs text-muted-foreground sm:inline">
+              <Kbd>Ctrl</Kbd> <Kbd>Enter</Kbd>
+            </span>
+            <Button onClick={confirm} disabled={pending}>
+              {pending ? "Sending to scoring" : "Confirm and score"}
+            </Button>
+          </span>
+        }
+      >
+        <p className="font-bold">Check the transcription against the photos.</p>
         <p className="text-sm">
-          Check the transcription against the photos. {flagged === 1 ? "1 word is highlighted to check." : flagged > 1 ? `${flagged} words are highlighted to check.` : "No words are flagged."}{" "}
-          Spelling and grammar errors from transcription never count against the student.
+          {flagged === 1 ? "1 word is highlighted to check." : flagged > 1 ? `${flagged} words are highlighted to check.` : "No words are flagged."} Spelling
+          and grammar errors from transcription never count against the student.
         </p>
-        <Button className="ml-auto" onClick={confirm} disabled={pending}>
-          {pending ? "Sending to scoring" : "Confirm and score"}
-        </Button>
-        <span className="hidden text-xs text-muted-foreground sm:inline">
-          <Kbd>Ctrl</Kbd> <Kbd>Enter</Kbd>
-        </span>
-      </div>
+      </Banner>
       {pages.map((p) => (
         <PageEditor key={p.id} page={p} />
       ))}

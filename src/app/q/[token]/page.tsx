@@ -30,7 +30,7 @@ export default async function QrLanding(props: PageProps<"/q/[token]">) {
 
   return (
     <main className="mx-auto flex w-full max-w-[720px] flex-col gap-2 px-4 py-16">
-      <h1 className="text-xl font-semibold">This answer sheet is not in your account</h1>
+      <h1 className="text-xl font-bold">This answer sheet is not in your account</h1>
       <p className="text-sm text-muted-foreground">
         Sign in with the account of the teacher who printed it, then scan the code again.
       </p>

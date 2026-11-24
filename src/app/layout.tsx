@@ -3,6 +3,8 @@ import { Toaster } from "sonner";
 
 import { TooltipProvider } from "@/components/ui/misc";
 import { APP_NAME } from "@/lib/brand";
+import "@fontsource/lato/400.css";
+import "@fontsource/lato/700.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,8 +17,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fcfcfc" },
-    { media: "(prefers-color-scheme: dark)", color: "#1c1d20" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f8fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#16181d" },
   ],
 };
 

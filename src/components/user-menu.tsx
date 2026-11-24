@@ -17,14 +17,14 @@ export function UserMenu({ name, email }: { name: string; email: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex size-8 items-center justify-center rounded-full border border-border bg-surface-muted text-xs font-semibold"
+        className="flex size-8 items-center justify-center rounded-full border border-border bg-surface-muted text-xs font-bold"
         aria-label="Account"
       >
         {initials || "?"}
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <div className="px-2 py-1.5">
-          <p className="truncate text-sm font-semibold">{name}</p>
+          <p className="truncate text-sm font-bold">{name}</p>
           <p className="truncate text-xs text-muted-foreground">{email}</p>
         </div>
         <DropdownMenuItem

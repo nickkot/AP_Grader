@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 function Progress({ className, value, ...props }: React.ComponentProps<typeof ProgressPrimitive.Root>) {
   return (
     <ProgressPrimitive.Root
-      className={cn("relative h-1.5 w-full overflow-hidden rounded-full bg-surface-muted", className)}
+      className={cn("relative h-2 w-full overflow-hidden rounded-full bg-surface-muted", className)}
       value={value}
       {...props}
     >
@@ -37,7 +37,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "-mb-px border-b-2 border-transparent pb-2 text-sm font-semibold text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground",
+        "-mb-px border-b-2 border-transparent pb-2 text-base font-bold text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary",
         className,
       )}
       {...props}
@@ -58,7 +58,7 @@ function Tooltip({ content, children }: { content: React.ReactNode; children: Re
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content
           sideOffset={4}
-          className="z-50 max-w-xs rounded-control bg-foreground px-2 py-1 text-xs text-background shadow-md"
+          className="z-50 max-w-xs rounded-control bg-foreground px-2 py-1 text-sm text-canvas shadow-mid"
         >
           {content}
         </TooltipPrimitive.Content>
@@ -77,7 +77,7 @@ function DropdownMenuContent({ className, ...props }: React.ComponentProps<typeo
         sideOffset={4}
         align="end"
         className={cn(
-          "z-50 min-w-44 rounded-panel border border-border bg-surface p-1 text-sm shadow-md",
+          "z-50 min-w-48 rounded-control border border-border bg-surface p-1 text-base shadow-mid",
           className,
         )}
         {...props}
