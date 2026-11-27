@@ -88,6 +88,24 @@ The first build is a smaller MVP than milestones 1 to 3 in `docs/PLAN.md`: the h
 | Google sign-in rate limit raised to 300 per minute per IP | Better Auth allows 3 sign-ins per 10 seconds per IP. A class signing in together shares one school IP |
 | Sign-in `next` must be a same-site path | `//host` was accepted and would send people to another site after sign-in |
 
+## Local model worker (2026-11-27)
+
+| Decision | Why |
+| --- | --- |
+| One function, `complete()` in `src/lib/llm`, makes every model call. Tasks name the model per provider | Swapping providers or models is a setting, not a code change. Fallback to the cloud lives in one place |
+| The queue is a Postgres table (`llm_jobs`) in the app database, not Supabase or a broker | The app already runs on Postgres with Drizzle. One less service |
+| The worker talks to the site over HTTPS with one bearer token; it never gets database credentials | A stolen laptop or token can claim jobs, not read the database. The token rotates in one place. Matches "service role key only on the server" |
+| Claims use `FOR UPDATE SKIP LOCKED`, a lease and a fresh token per claim. Every write checks the token | Two workers never get the same job, and a worker that slept cannot overwrite the cloud's answer |
+| A job goes local only when a worker with its model checked in within 90 seconds and fewer than 5 jobs wait | A Mac that is off never costs anyone a 10 minute wait. A laptop is slow, so a long queue would cost more time than it saves |
+| A local job unfinished by its deadline, or whose lease lapses, runs in the cloud. Inngest sleeps durably until then | Users never get stuck. The inline driver uses a timer for local development |
+| The server builds the prompt when the worker claims; job rows hold only ids, and a local answer is cleared once it is saved | The worker stays small. Essays never sit in the queue table, and a page replaced before the claim is simply cancelled |
+| The worker only answers the model call. Retries, quote checks and saving stay on the server | Local and cloud answers go through the same checks and the same code |
+| Reading pages runs locally by default once a worker is set up. Scoring stays in the cloud until the local model passes the benchmark | Transcription is checked by the teacher before scoring; a score reaches students |
+| Student practice and the hard-page re-read always use the cloud | Students wait on practice. A re-read exists because the first reading was weak |
+| Cloud calls are recorded in `llm_jobs` too | One table answers "what did we spend and what did we save" |
+| Savings are the local tokens priced at the cloud model's list price, with no caching discount | Simple and slightly generous. The admin page says so |
+| `/admin/llm` is visible only to `ADMIN_EMAILS`; anyone else gets a 404 | Spend and worker names are operator information, not teacher information |
+
 ## Known limits
 
 - Copier PDFs saved as JPEG 2000 will not render (the bundled pdf.js has no JPX decoder). Ordinary JPEG and JBIG2 scans work.

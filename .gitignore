@@ -44,3 +44,6 @@ next-env.d.ts
 screenshots/
 test-results/
 playwright-report/
+
+# The worker example settings file is safe to commit; worker/.env is not.
+!worker/.env.example

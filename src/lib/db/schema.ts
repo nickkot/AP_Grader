@@ -516,3 +516,65 @@ export const auditEvents = pgTable(
   },
   (t) => [index("audit_resource_idx").on(t.resourceType, t.resourceId), index("audit_user_idx").on(t.userId)],
 );
+
+/* ------------------------------------------------------------------ */
+/* Model job queue (local worker with cloud fallback)                  */
+/* ------------------------------------------------------------------ */
+
+export const LLM_JOB_TYPES = ["transcribe_page", "score_row"] as const;
+export type LlmJobType = (typeof LLM_JOB_TYPES)[number];
+
+/**
+ * One model call. Background jobs routed "local" wait here for a worker on the teacher's
+ * own computer; a job nobody finishes in time is run in the cloud instead. Jobs routed
+ * "cloud" are recorded here too, so tokens and spend live in one place.
+ * `input` holds ids only (page, submission, row), never essay text or images.
+ */
+export const llmJobs = pgTable(
+  "llm_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    type: text("type", { enum: LLM_JOB_TYPES }).notNull(),
+    /** Where the job is meant to run. A failed or late local job switches to "cloud". */
+    route: text("route", { enum: ["local", "cloud"] }).notNull(),
+    input: jsonb("input").$type<Record<string, unknown>>().notNull(),
+    status: text("status", { enum: ["pending", "claimed", "completed", "failed", "cancelled"] }).notNull().default("pending"),
+    output: jsonb("output"),
+    model: text("model"),
+    /** Who actually ran it. */
+    provider: text("provider", { enum: ["local", "cloud"] }),
+    tokensIn: integer("tokens_in"),
+    tokensOut: integer("tokens_out"),
+    /** Cloud prompt caching, counted separately from tokens_in. */
+    cacheReadTokens: integer("cache_read_tokens"),
+    cacheWriteTokens: integer("cache_write_tokens"),
+    /** API spend. Zero for local runs. */
+    costUsd: numeric("cost_usd", { precision: 12, scale: 6 }),
+    /** For local runs: what the same tokens would have cost on the cloud model for this job type. */
+    cloudCostEstimateUsd: numeric("cloud_cost_estimate_usd", { precision: 12, scale: 6 }),
+    workerId: text("worker_id"),
+    /** Changes on every claim, so a worker that lost its claim cannot complete the job. */
+    claimToken: uuid("claim_token"),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+    leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    attempts: integer("attempts").notNull().default(0),
+    /** A local job still unfinished at this time is run in the cloud. */
+    deadlineAt: timestamp("deadline_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    error: text("error"),
+  },
+  (t) => [
+    index("llm_jobs_claim_idx").on(t.status, t.route, t.createdAt),
+    index("llm_jobs_completed_idx").on(t.completedAt),
+  ],
+);
+
+/** Local workers, by the id they report. A worker not seen recently counts as offline. */
+export const llmWorkers = pgTable("llm_worker", {
+  id: text("id").primaryKey(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull(),
+  /** Models the worker has pulled, for example ["qwen3:32b", "qwen2.5vl:32b"]. */
+  models: jsonb("models").$type<string[]>().notNull().default([]),
+  version: text("version"),
+});

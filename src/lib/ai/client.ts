@@ -58,6 +58,12 @@ export function usageFrom(
   };
 }
 
+/** What these tokens would cost on a cloud model, with no caching. Used to estimate savings from local runs. */
+export function estimateCloudCost(model: string, tokensIn: number, tokensOut: number): number {
+  const p = PRICES[model] ?? PRICES["claude-sonnet-5-5"];
+  return (tokensIn * p.input + tokensOut * p.output) / 1_000_000;
+}
+
 export function addUsage(a: Usage, b: Usage): Usage {
   return {
     inputTokens: a.inputTokens + b.inputTokens,

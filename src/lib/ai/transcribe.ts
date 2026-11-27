@@ -1,10 +1,11 @@
 import "server-only";
 import { z } from "zod";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 
-import { anthropic, ModelOutputError, usageFrom, type Usage, ZERO_USAGE, addUsage } from "@/lib/ai/client";
+import { addUsage, type Usage, ZERO_USAGE } from "@/lib/ai/client";
 import { env } from "@/lib/env";
 import type { TranscriptLine } from "@/lib/db/schema";
+import { complete, modelFor, type LlmProviderName } from "@/lib/llm";
+import type { LlmPart } from "@/lib/llm/types";
 
 export const TRANSCRIBE_PROMPT_VERSION = "transcribe-v1";
 
@@ -68,56 +69,50 @@ export function transcriptStats(lines: TranscriptLine[]) {
   return { meanConfidence: mean, lowConfidenceCount: low };
 }
 
-async function callModel(model: string, image: Buffer, mediaType: "image/jpeg" | "image/png") {
-  const response = await anthropic().messages.parse({
-    model,
-    max_tokens: 16000,
-    system: SYSTEM,
-    output_config: { effort: "low", format: zodOutputFormat(TranscriptionSchema) },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: image.toString("base64") } },
-          { type: "text", text: "Transcribe the handwriting on this page." },
-        ],
-      },
-    ],
-  });
-  if (response.stop_reason === "refusal") throw new ModelOutputError("The model declined to transcribe this page.");
-  if (response.stop_reason === "max_tokens") throw new ModelOutputError("Transcription was cut off.");
-  const parsed = TranscriptionSchema.safeParse(response.parsed_output);
-  if (!parsed.success) throw new ModelOutputError("Transcription did not match the expected format.");
-  return { data: parsed.data, usage: usageFrom(model, response.usage) };
+export const TRANSCRIBE_SYSTEM = SYSTEM;
+
+export type RawTranscription = z.infer<typeof TranscriptionSchema>;
+
+/** The user message for one page: the cleaned photo and a short instruction. */
+export function transcribeParts(image: Buffer, mediaType: "image/jpeg" | "image/png"): LlmPart[] {
+  return [
+    { type: "image", mediaType, data: image.toString("base64") },
+    { type: "text", text: "Transcribe the handwriting on this page." },
+  ];
+}
+
+async function callTask(task: "transcribe" | "transcribe_retry", image: Buffer, mediaType: "image/jpeg" | "image/png") {
+  const r = await complete({ task, system: SYSTEM, parts: transcribeParts(image, mediaType), schema: TranscriptionSchema, maxTokens: 16000 });
+  return { data: r.output, usage: r.usage, model: r.model };
 }
 
 /**
- * Transcribe one page image (already rotated and with the header blanked).
- * Pages with low mean confidence are retried once on the stronger model.
+ * Turn a first transcription (from the cloud or a local worker) into the stored result.
+ * Pages with low mean confidence are read again once by the stronger retry model on this
+ * server's provider, unless that is the model that just read them.
  */
-export async function transcribePage(
+export async function finishTranscription(
+  first: { data: RawTranscription; usage: Usage; model: string },
   image: Buffer,
   mediaType: "image/jpeg" | "image/png" = "image/jpeg",
+  allowRetry = true,
 ): Promise<TranscriptionResult> {
   const e = env();
-  if (e.MODEL_MODE === "fake") return fakeTranscription();
-
-  let usage = ZERO_USAGE;
-  let model = e.TRANSCRIBE_MODEL;
-  let result = await callModel(model, image, mediaType);
-  usage = addUsage(usage, result.usage);
-  let stats = transcriptStats(result.data.lines);
+  let result = first;
+  let usage = first.usage;
+  let model = first.model;
+  let stats = transcriptStats(first.data.lines);
   let retried = false;
-
-  if (!result.data.page_is_blank && stats.meanConfidence < e.TRANSCRIBE_RETRY_THRESHOLD && e.TRANSCRIBE_RETRY_MODEL !== model) {
-    const retry = await callModel(e.TRANSCRIBE_RETRY_MODEL, image, mediaType);
+  const provider: LlmProviderName = e.LLM_PROVIDER;
+  if (allowRetry && e.MODEL_MODE !== "fake" && !first.data.page_is_blank && stats.meanConfidence < e.TRANSCRIBE_RETRY_THRESHOLD && modelFor("transcribe_retry", provider) !== model) {
+    const retry = await callTask("transcribe_retry", image, mediaType);
     usage = addUsage(usage, retry.usage);
     const retryStats = transcriptStats(retry.data.lines);
     retried = true;
     if (retryStats.meanConfidence >= stats.meanConfidence) {
       result = retry;
       stats = retryStats;
-      model = e.TRANSCRIBE_RETRY_MODEL;
+      model = retry.model;
     }
   }
 
@@ -141,9 +136,15 @@ export async function transcribePage(
   };
 }
 
-/* -------------------------------------------------------------------- */
-/* Fake mode: deterministic output for local demos and tests, no API key */
-/* -------------------------------------------------------------------- */
+/** Transcribe one page image (already rotated and with the header blanked) on this server's provider. */
+export async function transcribePage(
+  image: Buffer,
+  mediaType: "image/jpeg" | "image/png" = "image/jpeg",
+): Promise<TranscriptionResult> {
+  if (env().MODEL_MODE === "fake") return fakeTranscription();
+  const first = await callTask("transcribe", image, mediaType);
+  return finishTranscription(first, image, mediaType);
+}
 
 const FAKE_LINES = [
   "Between 1815 and 1850 the market revolution changed how Americans worked and lived.",

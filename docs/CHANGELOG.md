@@ -1,5 +1,24 @@
 # Changelog
 
+## Local model worker (2026-11-27)
+
+**Added**
+- `src/lib/llm`: one `complete()` call for every model request. `LLM_PROVIDER` picks Claude or any OpenAI-compatible server (Ollama, a hosted open model); `LLM_FALLBACK_PROVIDER` answers on an error or timeout.
+- `llm_jobs` queue for background model work, with atomic claims, leases and a deadline after which the cloud does the job. Reading pages can run on the operator's Mac; scoring stays in the cloud until benchmarked (`LLM_ROUTE_SCORE`).
+- Worker API (`/api/llm-worker/claim`, `/api/llm-worker/jobs/:id/:action`), authenticated with `LLM_WORKER_TOKEN`.
+- `worker/`: a small Node worker for macOS that polls the site, runs jobs on Ollama and reports back. Outbound connections only. launchd plist and installer, and `caffeinate` to keep the Mac awake.
+- `/admin/llm` for `ADMIN_EMAILS`: workers, routes, queue, and cloud spend and estimated savings by month. README has the same numbers as one SQL query.
+
+**Changed**
+- Transcription and scoring call `complete()` instead of the Anthropic SDK directly. Prompts, models and outputs are unchanged with the default settings.
+- Score run totals now add up every model job of the run, local and cloud.
+
+**Checks:** typecheck, lint, copy lint, unit and integration tests (new: concurrent claims never double-assign, deadline and lease fallbacks, refused late answers, schema-checked answers, the worker round trip for reading and scoring, endpoint tokens, savings by month, the OpenAI-compatible adapter, provider fallback, the worker's settings and job handling), production build, end-to-end flows. A smoke test ran the real worker against the dev server and a stand-in for Ollama.
+
+**Visual QA:** `/admin/llm` at laptop and iPhone 14 widths, light and dark. Fixed: tables scrolled sideways on phones (secondary columns now hide). No serious or critical axe issues.
+
+**Not tested here:** real Ollama models. Run the worker on the Mac and compare a batch of pages before relying on it.
+
 ## Student practice, P1 (2026-11-24)
 
 **Added**

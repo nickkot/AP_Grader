@@ -16,6 +16,12 @@ Nothing here is resolved. Each item needs a decision or a signature before launc
 - [ ] Anthropic: confirm commercial terms (no training on inputs) and request zero data retention for the organization.
 - [ ] Privacy policy and terms of service.
 
+## Local model worker
+
+- [ ] When the worker is on, header-blanked page photos (and, if scoring is routed locally, redacted essays) are processed on the operator's own computer. The privacy policy and district agreements must name this, or the worker stays off for real student work.
+- [ ] That computer needs FileVault, a login password, current macOS, and no other users. Ollama must stay bound to 127.0.0.1 with debug logging off. The worker keeps nothing on disk.
+- [ ] Check the license of each local model before use (for example Qwen models' terms) for commercial use.
+
 ## Software licenses
 
 - [x] mupdf (AGPL-3.0) removed in favor of unpdf (MIT) and @napi-rs/canvas (MIT).

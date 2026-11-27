@@ -54,6 +54,8 @@ async function discoverRoutes(ctx: BrowserContext): Promise<Record<string, strin
     class: classHref!,
     "new-class": "/classes/new",
     "how-it-works": "/how-it-works",
+    // Only renders for an ADMIN_EMAILS account; start the dev server with ADMIN_EMAILS=demo@example.com.
+    "admin-llm": "/admin/llm",
     "new-assignment": `/assignments/new?classId=${classHref!.split("/").pop()}`,
     assignment: assignmentHref!,
     upload: `${assignmentHref}/upload`,
