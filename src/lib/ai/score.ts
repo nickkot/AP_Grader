@@ -1,9 +1,8 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 
-import { anthropic, ModelOutputError, usageFrom, type Usage, ZERO_USAGE } from "@/lib/ai/client";
+import { ModelOutputError, type Usage, ZERO_USAGE } from "@/lib/ai/client";
 import { cleanQuote } from "@/lib/ai/quotes";
 import {
   BANNED_FEEDBACK_PHRASES,
@@ -15,6 +14,8 @@ import {
   wordCount,
 } from "@/lib/copy/banned";
 import { env } from "@/lib/env";
+import { complete } from "@/lib/llm";
+import type { LlmPart } from "@/lib/llm/types";
 import type { Rubric, RubricRow } from "@/lib/rubrics";
 
 export const SCORING_PROMPT_VERSION = "score-v1";
@@ -137,32 +138,19 @@ export function checkRowOutput(row: RubricRow, out: RowOutput): string[] {
   return issues;
 }
 
+export const SCORING_SYSTEM = SYSTEM;
+
+/** The user message for one row: the shared, cacheable context block, then the row instruction. */
+export function scoreRowParts(contextBlock: string, row: RubricRow, retryNote?: string): LlmPart[] {
+  return [
+    { type: "text", text: contextBlock, cache: true },
+    { type: "text", text: rowInstruction(row, retryNote) },
+  ];
+}
+
 async function callRow(ctx: ScoringContext, contextBlock: string, row: RubricRow, retryNote?: string) {
-  const e = env();
-  const model = e.SCORING_MODEL;
-  const response = await anthropic().beta.messages.parse({
-    model,
-    max_tokens: 16000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    system: SYSTEM,
-    thinking: { type: "adaptive" },
-    output_config: { effort: e.SCORING_EFFORT, format: zodOutputFormat(RowOutputSchema) },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: contextBlock, cache_control: { type: "ephemeral" } },
-          { type: "text", text: rowInstruction(row, retryNote) },
-        ],
-      },
-    ],
-  });
-  if (response.stop_reason === "refusal") throw new ModelOutputError("The model declined to score this row.");
-  if (response.stop_reason === "max_tokens") throw new ModelOutputError("Scoring output was cut off.");
-  const parsed = RowOutputSchema.safeParse(response.parsed_output);
-  if (!parsed.success) throw new ModelOutputError("Row score did not match the expected format.");
-  return { output: parsed.data, usage: usageFrom(response.model ?? model, response.usage), model: response.model ?? model };
+  const r = await complete({ task: "score_row", system: SYSTEM, parts: scoreRowParts(contextBlock, row, retryNote), schema: RowOutputSchema, maxTokens: 16000 });
+  return { output: r.output, usage: r.usage, model: r.model };
 }
 
 /**

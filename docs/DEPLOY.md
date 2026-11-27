@@ -57,6 +57,9 @@ ANTHROPIC_API_KEY=...
 JOBS_DRIVER=inngest
 INNGEST_EVENT_KEY=...
 INNGEST_SIGNING_KEY=...
+ADMIN_EMAILS=you@yourdomain.com
+# Optional: run background jobs on your own computer. See "Local inference with Ollama" in the README.
+LLM_WORKER_TOKEN=<openssl rand -hex 32>
 ```
 
 The app refuses to start on a public https `APP_URL` with dev login on, fake models, in-process jobs or local storage.

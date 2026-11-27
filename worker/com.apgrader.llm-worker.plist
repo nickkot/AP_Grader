@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Template. worker/install-launchd.sh fills in __REPO__ and __HOME__ and copies the result
+  to ~/Library/LaunchAgents. No secrets here: the worker reads them from worker/.env.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.apgrader.llm-worker</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__REPO__/worker/run.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO__</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/apgrader-llm-worker.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/apgrader-llm-worker.log</string>
+</dict>
+</plist>

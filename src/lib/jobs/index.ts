@@ -57,6 +57,15 @@ function pump() {
   }
 }
 
+/**
+ * Inline driver only: queue an event at a later time. Timers do not keep the process alive,
+ * and they are lost on restart (dev only). Inngest uses durable sleeps instead.
+ */
+export function enqueueAt(event: JobEvent, at: Date): void {
+  const timer = setTimeout(() => void enqueue(event), Math.max(0, at.getTime() - Date.now()));
+  timer.unref?.();
+}
+
 /** Resolves when every queued inline job (and the jobs they queued) has finished. For tests and scripts. */
 export function drainInlineJobs(): Promise<void> {
   if (running === 0 && inline.length === 0) return Promise.resolve();

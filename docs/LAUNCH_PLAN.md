@@ -70,6 +70,7 @@ This is the step that decides whether teachers can trust the app. It is mileston
 4. Run the fairness check: insert identity cues into essays and confirm scores and comments do not move beyond a set tolerance.
 5. Add a CI gate: any change to prompts, rubrics or model settings reruns the set and fails if agreement drops.
 6. Log real cost per essay and per class set, and replace the estimates in `docs/PLAN.md`.
+7. Run the same set through the local models on your Mac (README, "Local inference with Ollama"): transcription word error rate first, then row scores. Move a job type to local (`LLM_ROUTE_SCORE=local`) only if it meets the same targets.
 
 Done when: you set target numbers (a starting point: within 1 point on at least 95% of rows, and app-to-reader agreement no worse than reader-to-reader), and both essay types meet them. Rows that miss get prompt work or a stronger model for that row only.
 
